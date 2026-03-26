@@ -211,12 +211,6 @@ export async function fetchTaskAttachments(taskId: string): Promise<TaskAttachme
   }));
 }
 
-export function getTaskAttachmentDownloadUrl(_taskId: string, _attachmentId: string): string {
-  // We need to look up the file_path; this is a sync function so we return a placeholder
-  // The actual download should be handled differently
-  return "#";
-}
-
 export async function getAttachmentUrl(filePath: string): Promise<string> {
   const { data } = await supabase.storage
     .from("task-attachments")
