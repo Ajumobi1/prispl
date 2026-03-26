@@ -1,8 +1,7 @@
+import { supabase } from "@/integrations/supabase/client";
+
 export type AccountRole = "user" | "admin";
 export type AccountStatus = "pending" | "approved" | "declined" | "locked";
-
-const USERS_STORAGE_KEY = "prisp.local.users";
-const SESSION_STORAGE_KEY = "prisp.local.session.userId";
 
 export interface SessionUser {
   id: string;
@@ -18,125 +17,86 @@ export interface SessionUser {
 
 export interface AccountUser extends SessionUser {}
 
-interface StoredUser extends SessionUser {
-  password: string;
-}
+async function getProfileWithRole(userId: string, email: string): Promise<SessionUser | null> {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("user_id", userId)
+    .single();
 
-function nowIso(): string {
-  return new Date().toISOString();
-}
+  if (!profile) return null;
 
-function makeId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
+  const { data: roleData } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
 
-function readJson<T>(key: string, fallback: T): T {
-  try {
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-}
+  const role: AccountRole = roleData?.some((r: any) => r.role === "admin") ? "admin" : "user";
 
-function writeJson<T>(key: string, value: T): void {
-  window.localStorage.setItem(key, JSON.stringify(value));
-}
-
-function readUsers(): StoredUser[] {
-  const users = readJson<StoredUser[]>(USERS_STORAGE_KEY, []);
-  return Array.isArray(users) ? users : [];
-}
-
-function saveUsers(users: StoredUser[]): void {
-  writeJson(USERS_STORAGE_KEY, users);
-}
-
-function toSessionUser(user: StoredUser): SessionUser {
   return {
-    id: user.id,
-    full_name: user.full_name,
-    username: user.username,
-    email: user.email,
-    department: user.department,
-    role: user.role,
-    status: user.status,
-    created_at: user.created_at,
-    updated_at: user.updated_at,
+    id: userId,
+    full_name: profile.full_name,
+    username: profile.username,
+    email,
+    department: profile.department,
+    role,
+    status: profile.status as AccountStatus,
+    created_at: profile.created_at,
+    updated_at: profile.updated_at,
   };
-}
-
-function seedAdminIfNeeded(): void {
-  const users = readUsers();
-  if (users.some((user) => user.role === "admin")) return;
-
-  const timestamp = nowIso();
-  const admin: StoredUser = {
-    id: makeId("user"),
-    full_name: "System Admin",
-    username: "admin",
-    email: "admin@local.prisp",
-    department: "Administration",
-    role: "admin",
-    status: "approved",
-    created_at: timestamp,
-    updated_at: timestamp,
-    password: "admin",
-  };
-
-  users.push(admin);
-  saveUsers(users);
-}
-
-function getCurrentUserId(): string | null {
-  seedAdminIfNeeded();
-  return window.localStorage.getItem(SESSION_STORAGE_KEY);
-}
-
-function requireAdmin(): StoredUser {
-  const userId = getCurrentUserId();
-  if (!userId) throw new Error("Not authenticated.");
-
-  const user = readUsers().find((entry) => entry.id === userId);
-  if (!user || user.role !== "admin") throw new Error("Admin access required.");
-
-  return user;
 }
 
 export async function loginSession(username: string, password: string) {
-  seedAdminIfNeeded();
+  // First find the email for this username
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("user_id, full_name, username, status")
+    .eq("username", username.trim().toLowerCase())
+    .single();
 
-  const user = readUsers().find(
-    (entry) => entry.username.toLowerCase() === username.trim().toLowerCase()
-  );
-  if (!user || user.password !== password) {
+  if (!profile) {
     throw new Error("Invalid username or password.");
   }
 
-  if (user.status === "pending") throw new Error("Account is pending admin approval.");
-  if (user.status === "declined") throw new Error("Account has been declined by admin.");
-  if (user.status === "locked") throw new Error("Account is locked by admin.");
+  if (profile.status === "pending") throw new Error("Account is pending admin approval.");
+  if (profile.status === "declined") throw new Error("Account has been declined by admin.");
+  if (profile.status === "locked") throw new Error("Account is locked by admin.");
 
-  window.localStorage.setItem(SESSION_STORAGE_KEY, user.id);
+  // Get the user's email from auth to sign in
+  // We store username as lowercase, and the email in auth
+  // We need to get the email from the profile's auth user
+  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+    email: `${username.trim().toLowerCase()}@prisp.local`,
+    password,
+  });
+
+  if (authError || !authData.user) {
+    throw new Error("Invalid username or password.");
+  }
+
+  const { data: roleData } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", authData.user.id);
+
+  const role: AccountRole = roleData?.some((r: any) => r.role === "admin") ? "admin" : "user";
 
   return {
-    username: user.username,
-    full_name: user.full_name,
-    role: user.role,
+    username: profile.username,
+    full_name: profile.full_name,
+    role,
   };
 }
 
 export async function logoutSession(): Promise<void> {
-  window.localStorage.removeItem(SESSION_STORAGE_KEY);
+  await supabase.auth.signOut();
 }
 
 export async function getCurrentSession(): Promise<SessionUser | null> {
-  seedAdminIfNeeded();
-  const userId = getCurrentUserId();
-  if (!userId) return null;
-  const user = readUsers().find((entry) => entry.id === userId);
-  return user ? toSessionUser(user) : null;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) return null;
+
+  return getProfileWithRole(session.user.id, session.user.email ?? "");
 }
 
 export async function registerAccount(payload: {
@@ -146,71 +106,114 @@ export async function registerAccount(payload: {
   department: string;
   password: string;
 }): Promise<string> {
-  seedAdminIfNeeded();
-
   const normalizedUsername = payload.username.trim().toLowerCase();
-  const normalizedEmail = payload.email.trim().toLowerCase();
-  if (!normalizedUsername || !normalizedEmail || !payload.password.trim()) {
-    throw new Error("Full name, username, email, and password are required.");
+  if (!normalizedUsername || !payload.password.trim()) {
+    throw new Error("Username and password are required.");
   }
 
-  const users = readUsers();
-  if (users.some((entry) => entry.username.toLowerCase() === normalizedUsername)) {
+  // Check if username already exists
+  const { data: existing } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("username", normalizedUsername)
+    .maybeSingle();
+
+  if (existing) {
     throw new Error("Username already exists.");
   }
-  if (users.some((entry) => entry.email.toLowerCase() === normalizedEmail)) {
-    throw new Error("Email already exists.");
+
+  // Sign up with Supabase auth using username@prisp.local as email
+  const { error } = await supabase.auth.signUp({
+    email: `${normalizedUsername}@prisp.local`,
+    password: payload.password,
+    options: {
+      data: {
+        full_name: payload.fullName.trim(),
+        username: normalizedUsername,
+        department: payload.department.trim() || "Planning",
+      },
+    },
+  });
+
+  if (error) {
+    throw new Error(error.message);
   }
 
-  const timestamp = nowIso();
-  const created: StoredUser = {
-    id: makeId("user"),
-    full_name: payload.fullName.trim(),
-    username: payload.username.trim(),
-    email: payload.email.trim(),
-    department: payload.department.trim() || "Planning",
-    role: "user",
-    status: "pending",
-    created_at: timestamp,
-    updated_at: timestamp,
-    password: payload.password,
-  };
-
-  users.push(created);
-  saveUsers(users);
+  // Sign out immediately since the account needs admin approval
+  await supabase.auth.signOut();
 
   return "Account submitted. Awaiting admin approval.";
 }
 
 export async function fetchAdminUsers(): Promise<AccountUser[]> {
-  requireAdmin();
-  seedAdminIfNeeded();
+  const session = await getCurrentSession();
+  if (!session || session.role !== "admin") throw new Error("Admin access required.");
 
-  return readUsers()
-    .map((user) => toSessionUser(user))
-    .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const { data: profiles, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  // Get all roles
+  const { data: allRoles } = await supabase
+    .from("user_roles")
+    .select("user_id, role");
+
+  return (profiles ?? []).map((p: any) => {
+    const roles = allRoles?.filter((r: any) => r.user_id === p.user_id) ?? [];
+    const role: AccountRole = roles.some((r: any) => r.role === "admin") ? "admin" : "user";
+    return {
+      id: p.user_id,
+      full_name: p.full_name,
+      username: p.username,
+      email: `${p.username}@prisp.local`,
+      department: p.department,
+      role,
+      status: p.status as AccountStatus,
+      created_at: p.created_at,
+      updated_at: p.updated_at,
+    };
+  });
 }
 
 export async function updateAdminUserStatus(
   userId: string,
   status: AccountStatus
 ): Promise<AccountUser> {
-  const adminUser = requireAdmin();
-  const users = readUsers();
-  const index = users.findIndex((entry) => entry.id === userId);
+  const session = await getCurrentSession();
+  if (!session || session.role !== "admin") throw new Error("Admin access required.");
 
-  if (index < 0) throw new Error("User not found.");
-
-  if (users[index].id === adminUser.id && status !== "approved") {
+  if (userId === session.id && status !== "approved") {
     throw new Error("Admin account cannot be declined or locked.");
   }
 
-  users[index] = {
-    ...users[index],
-    status,
-    updated_at: nowIso(),
-  };
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({ status })
+    .eq("user_id", userId)
+    .select()
+    .single();
 
-  saveUsers(users);
-  return toSessionUser(users[index]);
+  if (error) throw new Error(error.message);
+
+  const { data: roleData } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+
+  const role: AccountRole = roleData?.some((r: any) => r.role === "admin") ? "admin" : "user";
+
+  return {
+    id: userId,
+    full_name: data.full_name,
+    username: data.username,
+    email: `${data.username}@prisp.local`,
+    department: data.department,
+    role,
+    status: data.status as AccountStatus,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+  };
 }
