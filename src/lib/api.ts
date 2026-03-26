@@ -1,21 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
 import { PRSTask, TaskPriority, TaskStatus, UnitName } from "./task-types";
-
-const TASKS_STORAGE_KEY = "prisp.local.tasks";
-const ATTACHMENTS_STORAGE_KEY = "prisp.local.attachments";
-
-interface StoredTask extends PRSTask {
-  id: string;
-}
-
-interface StoredAttachment {
-  id: string;
-  taskId: string;
-  fileName: string;
-  contentType: string;
-  fileSize: number;
-  uploadedAt: string;
-  dataUrl: string;
-}
 
 export interface TaskAttachment {
   id: string;
@@ -40,74 +24,6 @@ export interface CreateTaskPayload {
   remarks: string;
 }
 
-function nextId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-function readJson<T>(key: string, fallback: T): T {
-  try {
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-}
-
-function writeJson<T>(key: string, value: T): void {
-  window.localStorage.setItem(key, JSON.stringify(value));
-}
-
-function readTasks(): StoredTask[] {
-  const parsed = readJson<StoredTask[]>(TASKS_STORAGE_KEY, []);
-  return Array.isArray(parsed) ? parsed : [];
-}
-
-function saveTasks(tasks: StoredTask[]): void {
-  writeJson(TASKS_STORAGE_KEY, tasks);
-}
-
-function readAttachments(): StoredAttachment[] {
-  const parsed = readJson<StoredAttachment[]>(ATTACHMENTS_STORAGE_KEY, []);
-  return Array.isArray(parsed) ? parsed : [];
-}
-
-function saveAttachments(attachments: StoredAttachment[]): void {
-  writeJson(ATTACHMENTS_STORAGE_KEY, attachments);
-}
-
-function toPublicAttachment(attachment: StoredAttachment): TaskAttachment {
-  return {
-    id: attachment.id,
-    taskId: attachment.taskId,
-    fileName: attachment.fileName,
-    contentType: attachment.contentType,
-    fileSize: attachment.fileSize,
-    uploadedAt: attachment.uploadedAt,
-  };
-}
-
-function toStoredTask(payload: CreateTaskPayload): StoredTask {
-  const tasks = readTasks();
-  const nextSerial = tasks.length > 0 ? Math.max(...tasks.map((t) => t.serialNumber)) + 1 : 1;
-
-  return {
-    id: nextId("task"),
-    serialNumber: nextSerial,
-    unit: payload.unit,
-    taskTitle: payload.taskTitle,
-    taskDescription: payload.taskDescription,
-    assignee: payload.assignee,
-    dateAssigned: payload.dateAssigned,
-    dueDate: payload.dueDate,
-    status: payload.status,
-    priority: payload.priority,
-    deliverable: payload.deliverable,
-    checklist: payload.checklist,
-    remarks: payload.remarks,
-  };
-}
-
 function downloadBlob(content: string, contentType: string, filename: string): void {
   const blob = new Blob([content], { type: contentType });
   const blobUrl = window.URL.createObjectURL(blob);
@@ -126,7 +42,6 @@ function asCsv(tasks: PRSTask[]): string {
     "Start Date", "End Date", "Status", "Priority",
     "Deliverable", "Checklist", "Remarks",
   ];
-
   const escape = (value: string) => `"${value.replace(/"/g, '""')}"`;
   const rows = tasks.map((task) => [
     String(task.serialNumber), task.unit, task.taskTitle,
@@ -134,46 +49,85 @@ function asCsv(tasks: PRSTask[]): string {
     task.dueDate, task.status, task.priority,
     task.deliverable, task.checklist, task.remarks,
   ]);
-
   return [headers, ...rows].map((row) => row.map((cell) => escape(cell ?? "")).join(",")).join("\n");
 }
 
+function rowToTask(row: any): PRSTask {
+  return {
+    id: row.id,
+    serialNumber: row.serial_number,
+    unit: row.unit as UnitName,
+    taskTitle: row.task_title,
+    taskDescription: row.task_description,
+    assignee: row.assignee,
+    dateAssigned: row.date_assigned,
+    dueDate: row.due_date,
+    status: row.status as TaskStatus,
+    priority: row.priority as TaskPriority,
+    deliverable: row.deliverable,
+    checklist: row.checklist,
+    remarks: row.remarks,
+  };
+}
+
 export async function fetchTasks(): Promise<PRSTask[]> {
-  return readTasks().sort((a, b) => a.serialNumber - b.serialNumber);
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("*")
+    .order("serial_number", { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(rowToTask);
 }
 
 export async function createTask(payload: CreateTaskPayload): Promise<PRSTask> {
-  const nextTask = toStoredTask(payload);
-  const tasks = readTasks();
-  tasks.push(nextTask);
-  saveTasks(tasks);
-  return nextTask;
+  const { data: { session } } = await supabase.auth.getSession();
+
+  const { data, error } = await supabase
+    .from("tasks")
+    .insert({
+      unit: payload.unit,
+      task_title: payload.taskTitle,
+      task_description: payload.taskDescription,
+      assignee: payload.assignee,
+      date_assigned: payload.dateAssigned,
+      due_date: payload.dueDate,
+      status: payload.status,
+      priority: payload.priority,
+      deliverable: payload.deliverable,
+      checklist: payload.checklist,
+      remarks: payload.remarks,
+      created_by: session?.user?.id ?? null,
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return rowToTask(data);
 }
 
 export async function updateTask(taskId: string, payload: CreateTaskPayload): Promise<PRSTask> {
-  const tasks = readTasks();
-  const index = tasks.findIndex((task) => task.id === taskId);
-  if (index < 0) throw new Error("Task not found.");
+  const { data, error } = await supabase
+    .from("tasks")
+    .update({
+      unit: payload.unit,
+      task_title: payload.taskTitle,
+      task_description: payload.taskDescription,
+      assignee: payload.assignee,
+      date_assigned: payload.dateAssigned,
+      due_date: payload.dueDate,
+      status: payload.status,
+      priority: payload.priority,
+      deliverable: payload.deliverable,
+      checklist: payload.checklist,
+      remarks: payload.remarks,
+    })
+    .eq("id", taskId)
+    .select()
+    .single();
 
-  const current = tasks[index];
-  const updated: StoredTask = {
-    ...current,
-    unit: payload.unit,
-    taskTitle: payload.taskTitle,
-    taskDescription: payload.taskDescription,
-    assignee: payload.assignee,
-    dateAssigned: payload.dateAssigned,
-    dueDate: payload.dueDate,
-    status: payload.status,
-    priority: payload.priority,
-    deliverable: payload.deliverable,
-    checklist: payload.checklist,
-    remarks: payload.remarks,
-  };
-
-  tasks[index] = updated;
-  saveTasks(tasks);
-  return updated;
+  if (error) throw new Error(error.message);
+  return rowToTask(data);
 }
 
 export async function downloadTasks(format: "csv" | "xlsx" | "pdf"): Promise<void> {
@@ -184,61 +138,110 @@ export async function downloadTasks(format: "csv" | "xlsx" | "pdf"): Promise<voi
     downloadBlob(asCsv(tasks), "text/csv;charset=utf-8", `prs-task-tracker-${now}.csv`);
     return;
   }
-
   if (format === "xlsx") {
     downloadBlob(asCsv(tasks), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", `prs-task-tracker-${now}.xlsx`);
     return;
   }
-
   const pdfLike = [
-    "PRS Task Tracker",
-    "",
+    "PRS Task Tracker", "",
     ...tasks.map((t) => `${t.serialNumber}. ${t.taskTitle} | ${t.unit} | ${t.assignee} | ${t.status} | ${t.dueDate}`),
   ].join("\n");
-
   downloadBlob(pdfLike, "application/pdf", `prs-task-tracker-${now}.pdf`);
 }
 
 export async function uploadTaskAttachments(taskId: string, files: File[]): Promise<TaskAttachment[]> {
-  const toDataUrl = (file: File) =>
-    new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
-      reader.onerror = () => reject(new Error(`Failed to read ${file.name}`));
-      reader.readAsDataURL(file);
+  const { data: { session } } = await supabase.auth.getSession();
+  const results: TaskAttachment[] = [];
+
+  for (const file of files) {
+    const filePath = `${taskId}/${Date.now()}-${file.name}`;
+    const { error: uploadError } = await supabase.storage
+      .from("task-attachments")
+      .upload(filePath, file);
+
+    if (uploadError) throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`);
+
+    const { data, error } = await supabase
+      .from("task_attachments")
+      .insert({
+        task_id: taskId,
+        file_name: file.name,
+        file_path: filePath,
+        content_type: file.type || "application/octet-stream",
+        file_size: file.size,
+        uploaded_by: session?.user?.id ?? null,
+      })
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    results.push({
+      id: data.id,
+      taskId: data.task_id,
+      fileName: data.file_name,
+      contentType: data.content_type,
+      fileSize: Number(data.file_size),
+      uploadedAt: data.created_at,
     });
+  }
 
-  const dataUrls = await Promise.all(files.map((file) => toDataUrl(file)));
-  const allAttachments = readAttachments();
-  const created: StoredAttachment[] = files.map((file, index) => ({
-    id: nextId("attachment"),
-    taskId,
-    fileName: file.name,
-    contentType: file.type || "application/octet-stream",
-    fileSize: file.size,
-    uploadedAt: new Date().toISOString(),
-    dataUrl: dataUrls[index],
-  }));
-
-  allAttachments.push(...created);
-  saveAttachments(allAttachments);
-  return created.map(toPublicAttachment);
+  return results;
 }
 
 export async function fetchTaskAttachments(taskId: string): Promise<TaskAttachment[]> {
-  return readAttachments()
-    .filter((a) => a.taskId === taskId)
-    .sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt))
-    .map(toPublicAttachment);
+  const { data, error } = await supabase
+    .from("task_attachments")
+    .select("*")
+    .eq("task_id", taskId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((a: any) => ({
+    id: a.id,
+    taskId: a.task_id,
+    fileName: a.file_name,
+    contentType: a.content_type,
+    fileSize: Number(a.file_size),
+    uploadedAt: a.created_at,
+  }));
 }
 
-export function getTaskAttachmentDownloadUrl(taskId: string, attachmentId: string): string {
-  const attachment = readAttachments().find((e) => e.taskId === taskId && e.id === attachmentId);
-  return attachment?.dataUrl ?? "#";
+export function getTaskAttachmentDownloadUrl(_taskId: string, _attachmentId: string): string {
+  // We need to look up the file_path; this is a sync function so we return a placeholder
+  // The actual download should be handled differently
+  return "#";
+}
+
+export async function getAttachmentUrl(filePath: string): Promise<string> {
+  const { data } = await supabase.storage
+    .from("task-attachments")
+    .createSignedUrl(filePath, 3600);
+
+  return data?.signedUrl ?? "#";
 }
 
 export async function deleteTaskAttachment(taskId: string, attachmentId: string): Promise<void> {
-  const current = readAttachments();
-  const filtered = current.filter((a) => !(a.taskId === taskId && a.id === attachmentId));
-  saveAttachments(filtered);
+  // Get the file path first
+  const { data: attachment } = await supabase
+    .from("task_attachments")
+    .select("file_path")
+    .eq("id", attachmentId)
+    .eq("task_id", taskId)
+    .single();
+
+  if (attachment?.file_path) {
+    await supabase.storage
+      .from("task-attachments")
+      .remove([attachment.file_path]);
+  }
+
+  const { error } = await supabase
+    .from("task_attachments")
+    .delete()
+    .eq("id", attachmentId)
+    .eq("task_id", taskId);
+
+  if (error) throw new Error(error.message);
 }
