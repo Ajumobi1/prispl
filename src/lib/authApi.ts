@@ -85,7 +85,8 @@ function seedAdminIfNeeded(): void {
     password: "admin",
   };
 
-  saveUsers([admin]);
+  users.push(admin);
+  saveUsers(users);
 }
 
 function getCurrentUserId(): string | null {
