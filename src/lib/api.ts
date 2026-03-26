@@ -5,6 +5,7 @@ export interface TaskAttachment {
   id: string;
   taskId: string;
   fileName: string;
+  filePath: string;
   contentType: string;
   fileSize: number;
   uploadedAt: string;
