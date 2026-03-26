@@ -620,7 +620,17 @@ export default function TaskTrackerPage() {
                                   <CollapsibleContent className="space-y-1 pt-1">
                                     {attachments.map((att) => (
                                       <div key={att.id} className="flex items-center gap-1 text-xs">
-                                        <a href={getTaskAttachmentDownloadUrl(task.id!, att.id)} download={att.fileName} className="text-primary underline">{att.fileName}</a>
+                                        <button
+                                          className="text-primary underline text-xs"
+                                          onClick={async () => {
+                                            if (att.filePath) {
+                                              const url = await getAttachmentUrl(att.filePath);
+                                              window.open(url, "_blank");
+                                            }
+                                          }}
+                                        >
+                                          {att.fileName}
+                                        </button>
                                         <Button size="sm" variant="ghost" className="h-5 px-1 text-xs text-destructive" onClick={() => onDeleteAttachment(task, att)} disabled={deletingAttachmentId === att.id}>×</Button>
                                       </div>
                                     ))}
