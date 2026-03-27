@@ -12,11 +12,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const SECURITY_QUESTIONS = [
+  "What is your mother's maiden name?",
+  "What was the name of your first pet?",
+  "What city were you born in?",
+  "What is the name of your favorite teacher?",
+  "What is your favorite childhood movie?",
+];
+
 export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [department, setDepartment] = useState("Planning");
+  const [securityQuestion, setSecurityQuestion] = useState(SECURITY_QUESTIONS[0]);
+  const [securityAnswer, setSecurityAnswer] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,14 +43,24 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!securityAnswer.trim()) {
+      setError("Security answer is required.");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
-      const detail = await registerAccount({ fullName, username, email, department, password });
+      const detail = await registerAccount({
+        fullName, username, email, department, password,
+        securityQuestion, securityAnswer: securityAnswer.trim(),
+      });
       setMessage(detail);
       setFullName("");
       setUsername("");
       setEmail("");
       setDepartment("Planning");
+      setSecurityQuestion(SECURITY_QUESTIONS[0]);
+      setSecurityAnswer("");
       setPassword("");
       setConfirmPassword("");
     } catch (err) {
@@ -75,6 +95,17 @@ export default function RegisterPage() {
                 <SelectItem value="Administration">Administration</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={securityQuestion} onValueChange={setSecurityQuestion}>
+              <SelectTrigger>
+                <SelectValue placeholder="Security Question" />
+              </SelectTrigger>
+              <SelectContent>
+                {SECURITY_QUESTIONS.map((q) => (
+                  <SelectItem key={q} value={q}>{q}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input placeholder="Security Answer" value={securityAnswer} onChange={(e) => setSecurityAnswer(e.target.value)} required />
             <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             <Input type="password" placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
             {error && <p className="text-sm text-destructive">{error}</p>}

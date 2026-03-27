@@ -110,6 +110,8 @@ export async function registerAccount(payload: {
   email: string;
   department: string;
   password: string;
+  securityQuestion: string;
+  securityAnswer: string;
 }): Promise<string> {
   const normalizedUsername = payload.username.trim().toLowerCase();
   if (!normalizedUsername || !payload.password.trim()) {
@@ -128,7 +130,7 @@ export async function registerAccount(payload: {
   }
 
   // Sign up with Supabase auth using username@prisp.local as email
-  const { error } = await supabase.auth.signUp({
+  const { data: signUpData, error } = await supabase.auth.signUp({
     email: `${normalizedUsername}@prisp.local`,
     password: payload.password,
     options: {
@@ -142,6 +144,17 @@ export async function registerAccount(payload: {
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  // Update the profile with security question/answer
+  if (signUpData.user) {
+    await supabase
+      .from("profiles")
+      .update({
+        security_question: payload.securityQuestion,
+        security_answer: payload.securityAnswer.toLowerCase().trim(),
+      })
+      .eq("user_id", signUpData.user.id);
   }
 
   // Sign out immediately since the account needs admin approval

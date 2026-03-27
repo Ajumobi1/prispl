@@ -63,6 +63,7 @@ export default function LoginPage() {
             </Button>
           </form>
           <div className="mt-4 flex flex-col items-center gap-2 text-sm">
+            <Link to="/forgot-password" className="text-primary underline">Forgot Password?</Link>
             <Link to="/register" className="text-primary underline">Create New Account</Link>
             <Link to="/" className="text-muted-foreground underline">Back to Home</Link>
           </div>
