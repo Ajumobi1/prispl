@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -11,6 +12,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   AccountStatus,
   AccountUser,
   fetchAdminUsers,
@@ -18,6 +26,7 @@ import {
   logoutSession,
   updateAdminUserStatus,
 } from "@/lib/authApi";
+import { supabase } from "@/integrations/supabase/client";
 
 const orderedStatus: AccountStatus[] = ["pending", "approved", "locked", "declined"];
 
@@ -28,6 +37,14 @@ export default function AccountAdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [busyUserId, setBusyUserId] = useState<string | null>(null);
+
+  // Password reset dialog state
+  const [resetUser, setResetUser] = useState<AccountUser | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetConfirm, setResetConfirm] = useState("");
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetSuccess, setResetSuccess] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -73,6 +90,40 @@ export default function AccountAdminPage() {
     } finally {
       setBusyUserId(null);
     }
+  };
+
+  const handleResetPassword = async () => {
+    setResetError(null);
+    if (resetPassword.length < 4) {
+      setResetError("Password must be at least 4 characters.");
+      return;
+    }
+    if (resetPassword !== resetConfirm) {
+      setResetError("Passwords do not match.");
+      return;
+    }
+    setIsResetting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const { data, error: fnError } = await supabase.functions.invoke("admin-reset-password", {
+        body: { userId: resetUser!.id, newPassword: resetPassword },
+      });
+      if (fnError) throw new Error("Failed to reset password.");
+      if (data?.error) throw new Error(data.error);
+      setResetSuccess(true);
+    } catch (err) {
+      setResetError(err instanceof Error ? err.message : "Reset failed.");
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const openResetDialog = (user: AccountUser) => {
+    setResetUser(user);
+    setResetPassword("");
+    setResetConfirm("");
+    setResetError(null);
+    setResetSuccess(false);
   };
 
   const signOut = async () => {
@@ -153,6 +204,9 @@ export default function AccountAdminPage() {
                                   Unlock
                                 </Button>
                               )}
+                              <Button size="sm" variant="secondary" onClick={() => openResetDialog(user)} disabled={busyUserId === user.id}>
+                                Reset Password
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -165,6 +219,32 @@ export default function AccountAdminPage() {
           ))
         )}
       </main>
+
+      <Dialog open={!!resetUser} onOpenChange={(open) => !open && setResetUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Set a new password for <strong>{resetUser?.full_name}</strong> ({resetUser?.username})
+            </DialogDescription>
+          </DialogHeader>
+          {resetSuccess ? (
+            <div className="space-y-4">
+              <p className="text-sm text-emerald-600">Password has been reset successfully.</p>
+              <Button className="w-full" onClick={() => setResetUser(null)}>Close</Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <Input type="password" placeholder="New Password" value={resetPassword} onChange={(e) => setResetPassword(e.target.value)} />
+              <Input type="password" placeholder="Confirm Password" value={resetConfirm} onChange={(e) => setResetConfirm(e.target.value)} />
+              {resetError && <p className="text-sm text-destructive">{resetError}</p>}
+              <Button className="w-full" onClick={handleResetPassword} disabled={isResetting}>
+                {isResetting ? "Resetting..." : "Reset Password"}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
