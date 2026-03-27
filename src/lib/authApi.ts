@@ -47,26 +47,11 @@ async function getProfileWithRole(userId: string, email: string): Promise<Sessio
 }
 
 export async function loginSession(username: string, password: string) {
-  // First find the email for this username
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("user_id, full_name, username, status")
-    .eq("username", username.trim().toLowerCase())
-    .single();
+  const normalizedUsername = username.trim().toLowerCase();
 
-  if (!profile) {
-    throw new Error("Invalid username or password.");
-  }
-
-  if (profile.status === "pending") throw new Error("Account is pending admin approval.");
-  if (profile.status === "declined") throw new Error("Account has been declined by admin.");
-  if (profile.status === "locked") throw new Error("Account is locked by admin.");
-
-  // Get the user's email from auth to sign in
-  // We store username as lowercase, and the email in auth
-  // We need to get the email from the profile's auth user
+  // Sign in first (no profile lookup needed before auth)
   const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-    email: `${username.trim().toLowerCase()}@prisp.local`,
+    email: `${normalizedUsername}@prisp.local`,
     password,
   });
 
@@ -74,6 +59,26 @@ export async function loginSession(username: string, password: string) {
     throw new Error("Invalid username or password.");
   }
 
+  // Now that we're authenticated, check profile status
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, username, status")
+    .eq("user_id", authData.user.id)
+    .single();
+
+  if (!profile) {
+    await supabase.auth.signOut();
+    throw new Error("Invalid username or password.");
+  }
+
+  if (profile.status !== "approved") {
+    await supabase.auth.signOut();
+    if (profile.status === "pending") throw new Error("Account is pending admin approval.");
+    if (profile.status === "declined") throw new Error("Account has been declined by admin.");
+    if (profile.status === "locked") throw new Error("Account is locked by admin.");
+  }
+
+  // Fetch role
   const { data: roleData } = await supabase
     .from("user_roles")
     .select("role")
