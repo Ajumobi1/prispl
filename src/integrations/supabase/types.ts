@@ -20,6 +20,8 @@ export type Database = {
           department: string
           full_name: string
           id: string
+          security_answer: string
+          security_question: string
           status: Database["public"]["Enums"]["account_status"]
           updated_at: string
           user_id: string
@@ -30,6 +32,8 @@ export type Database = {
           department?: string
           full_name?: string
           id?: string
+          security_answer?: string
+          security_question?: string
           status?: Database["public"]["Enums"]["account_status"]
           updated_at?: string
           user_id: string
@@ -40,6 +44,8 @@ export type Database = {
           department?: string
           full_name?: string
           id?: string
+          security_answer?: string
+          security_question?: string
           status?: Database["public"]["Enums"]["account_status"]
           updated_at?: string
           user_id?: string

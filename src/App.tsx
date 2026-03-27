@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Navigate } from "react-router-dom";
 import LoginPage from "./pages/Login";
 import RegisterPage from "./pages/Register";
+import ForgotPasswordPage from "./pages/ForgotPassword";
 import TaskTrackerPage from "./pages/TaskTracker";
 import DashboardPage from "./pages/Dashboard";
 import AccountAdminPage from "./pages/AccountAdmin";
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/" element={<Navigate to="/task-tracker" replace />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/task-tracker" element={<TaskTrackerPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/account-admin" element={<AccountAdminPage />} />
