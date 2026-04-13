@@ -5,6 +5,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function sha256Hex(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -26,7 +34,6 @@ Deno.serve(async (req) => {
 
     const normalizedUsername = username.trim().toLowerCase();
 
-    // Find the profile
     const { data: profile, error: profileError } = await adminClient
       .from("profiles")
       .select("user_id, security_question, security_answer")
@@ -47,15 +54,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Compare answers (case-insensitive)
-    if (profile.security_answer.toLowerCase().trim() !== securityAnswer.toLowerCase().trim()) {
+    // Compare hashed answer
+    const hashedInput = await sha256Hex(securityAnswer.toLowerCase().trim());
+    if (profile.security_answer !== hashedInput) {
       return new Response(JSON.stringify({ error: "Incorrect security answer." }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Reset the password
     const { error } = await adminClient.auth.admin.updateUserById(profile.user_id, { password: newPassword });
 
     if (error) {

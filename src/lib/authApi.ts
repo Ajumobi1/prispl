@@ -146,13 +146,20 @@ export async function registerAccount(payload: {
     throw new Error(error.message);
   }
 
-  // Update the profile with security question/answer
+  // Update the profile with security question and hashed answer
   if (signUpData.user) {
+    const answerNormalized = payload.securityAnswer.toLowerCase().trim();
+    const encoder = new TextEncoder();
+    const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(answerNormalized));
+    const hashedAnswer = Array.from(new Uint8Array(hashBuffer))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
     await supabase
       .from("profiles")
       .update({
         security_question: payload.securityQuestion,
-        security_answer: payload.securityAnswer.toLowerCase().trim(),
+        security_answer: hashedAnswer,
       })
       .eq("user_id", signUpData.user.id);
   }
