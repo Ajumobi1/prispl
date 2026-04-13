@@ -212,11 +212,33 @@ export async function fetchTaskAttachments(taskId: string): Promise<TaskAttachme
 }
 
 export async function getAttachmentUrl(filePath: string): Promise<string> {
-  const { data } = await supabase.storage
+  const { data, error } = await supabase.storage
     .from("task-attachments")
     .createSignedUrl(filePath, 3600);
 
+  if (error) {
+    console.error("Failed to create signed URL:", error.message);
+    throw new Error(`Failed to get download URL: ${error.message}`);
+  }
+
   return data?.signedUrl ?? "#";
+}
+
+export async function downloadAttachment(filePath: string, fileName: string): Promise<void> {
+  const { data, error } = await supabase.storage
+    .from("task-attachments")
+    .download(filePath);
+
+  if (error) throw new Error(`Failed to download: ${error.message}`);
+
+  const url = window.URL.createObjectURL(data);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  window.URL.revokeObjectURL(url);
 }
 
 export async function deleteTaskAttachment(taskId: string, attachmentId: string): Promise<void> {
