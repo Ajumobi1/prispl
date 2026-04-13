@@ -41,7 +41,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [sessionChecked, setSessionChecked] = useState(false);
   const [tasks, setTasks] = useState<PRSTask[]>([]);
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [selectedMonth, setSelectedMonth] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
