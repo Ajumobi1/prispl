@@ -628,7 +628,7 @@ export default function TaskTrackerPage() {
                                               try {
                                                 await downloadAttachment(att.filePath, att.fileName);
                                               } catch (e: any) {
-                                                toast({ title: "Download failed", description: e.message, variant: "destructive" });
+                                                alert("Download failed: " + e.message);
                                               }
                                             }
                                           }}
