@@ -625,8 +625,11 @@ export default function TaskTrackerPage() {
                                           className="text-primary underline text-xs"
                                           onClick={async () => {
                                             if (att.filePath) {
-                                              const url = await getAttachmentUrl(att.filePath);
-                                              window.open(url, "_blank");
+                                              try {
+                                                await downloadAttachment(att.filePath, att.fileName);
+                                              } catch (e: any) {
+                                                toast({ title: "Download failed", description: e.message, variant: "destructive" });
+                                              }
                                             }
                                           }}
                                         >
