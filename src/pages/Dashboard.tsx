@@ -56,6 +56,12 @@ export default function DashboardPage() {
         setError(null);
         const data = await fetchTasks();
         setTasks(data);
+        if (data.length > 0) {
+          const months = Array.from(new Set(data.map((t) => t.dateAssigned.slice(0, 7)))).sort((a, b) => b.localeCompare(a));
+          setSelectedMonth((prev) => prev || months[0] || new Date().toISOString().slice(0, 7));
+        } else {
+          setSelectedMonth((prev) => prev || new Date().toISOString().slice(0, 7));
+        }
         setIsAdmin(session?.role === "admin");
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to load dashboard data.";
