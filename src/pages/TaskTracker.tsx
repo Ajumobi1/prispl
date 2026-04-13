@@ -32,6 +32,7 @@ import {
   downloadTasks,
   fetchTaskAttachments,
   fetchTasks,
+  downloadAttachment,
   getAttachmentUrl,
   TaskAttachment,
   updateTask,
