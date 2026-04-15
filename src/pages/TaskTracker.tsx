@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Download } from "lucide-react";
+import ondoLogo from "@/assets/ondo-state-logo.png";
+import odchcLogo from "@/assets/odchc-logo.png";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -384,20 +386,24 @@ export default function TaskTrackerPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card px-4 py-3">
+      <header className="border-b bg-primary text-primary-foreground px-4 py-3">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Unit Task Tracker</h1>
-            <p className="text-sm text-muted-foreground">Operational tracker for all departments: Planning, Research, Statistics, and M&E.</p>
+          <div className="flex items-center gap-3">
+            <img src={ondoLogo} alt="Ondo State" className="h-10 w-10 object-contain" />
+            <img src={odchcLogo} alt="ODCHC" className="h-8 object-contain brightness-0 invert" />
+            <div>
+              <h1 className="text-lg font-bold">Unit Task Tracker</h1>
+              <p className="text-xs text-primary-foreground/70">PR&S Unit — All Departments</p>
+            </div>
           </div>
           <nav className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild><Link to="/dashboard">Dashboard</Link></Button>
-            <Button variant={viewMode === "table" ? "default" : "ghost"} size="sm" onClick={() => setViewMode("table")}>Table View</Button>
-            <Button variant={viewMode === "kanban" ? "default" : "ghost"} size="sm" onClick={() => setViewMode("kanban")} disabled={isBusy}>Kanban</Button>
-            <Button variant="outline" size="sm" onClick={onDownloadEverything} disabled={isBusy}>
+            <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" asChild><Link to="/dashboard">Dashboard</Link></Button>
+            <Button variant={viewMode === "table" ? "secondary" : "ghost"} size="sm" className={viewMode !== "table" ? "text-primary-foreground hover:bg-primary-foreground/10" : ""} onClick={() => setViewMode("table")}>Table View</Button>
+            <Button variant={viewMode === "kanban" ? "secondary" : "ghost"} size="sm" className={viewMode !== "kanban" ? "text-primary-foreground hover:bg-primary-foreground/10" : ""} onClick={() => setViewMode("kanban")} disabled={isBusy}>Kanban</Button>
+            <Button variant="outline" size="sm" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" onClick={onDownloadEverything} disabled={isBusy}>
               <Download className="mr-1 h-4 w-4" /> Export CSV
             </Button>
-            <Button variant="outline" size="sm" onClick={logout}>Logout</Button>
+            <Button variant="outline" size="sm" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" onClick={logout}>Logout</Button>
           </nav>
         </div>
       </header>
