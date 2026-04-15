@@ -11,6 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import ondoLogo from "@/assets/ondo-state-logo.png";
+import odchcLogo from "@/assets/odchc-logo.png";
 
 const SECURITY_QUESTIONS = [
   "What is your mother's maiden name?",
@@ -73,18 +75,22 @@ export default function RegisterPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
+      <Card className="w-full max-w-md shadow-xl border-0">
+        <CardHeader className="text-center pb-2">
+          <div className="flex justify-center gap-4 mb-3">
+            <img src={ondoLogo} alt="Ondo State Logo" className="h-14 w-14 object-contain" />
+            <img src={odchcLogo} alt="ODCHC Logo" className="h-12 object-contain" />
+          </div>
           <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
           <CardDescription>New accounts require admin approval before login is allowed.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={onSubmit} className="space-y-4">
-            <Input placeholder="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-            <Input placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required />
-            <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <form onSubmit={onSubmit} className="space-y-3">
+            <Input placeholder="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} required className="h-10" />
+            <Input placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required className="h-10" />
+            <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required className="h-10" />
             <Select value={department} onValueChange={setDepartment}>
-              <SelectTrigger>
+              <SelectTrigger className="h-10">
                 <SelectValue placeholder="Department" />
               </SelectTrigger>
               <SelectContent>
@@ -96,7 +102,7 @@ export default function RegisterPage() {
               </SelectContent>
             </Select>
             <Select value={securityQuestion} onValueChange={setSecurityQuestion}>
-              <SelectTrigger>
+              <SelectTrigger className="h-10">
                 <SelectValue placeholder="Security Question" />
               </SelectTrigger>
               <SelectContent>
@@ -105,17 +111,17 @@ export default function RegisterPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Input placeholder="Security Answer" value={securityAnswer} onChange={(e) => setSecurityAnswer(e.target.value)} required />
-            <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            <Input type="password" placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+            <Input placeholder="Security Answer" value={securityAnswer} onChange={(e) => setSecurityAnswer(e.target.value)} required className="h-10" />
+            <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required className="h-10" />
+            <Input type="password" placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className="h-10" />
             {error && <p className="text-sm text-destructive">{error}</p>}
-            {message && <p className="text-sm text-emerald-600">{message}</p>}
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {message && <p className="text-sm text-accent">{message}</p>}
+            <Button type="submit" className="w-full h-11 font-semibold" disabled={isSubmitting}>
               {isSubmitting ? "Submitting..." : "Submit For Approval"}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">
-            <Link to="/login" className="text-primary underline">Back to Login</Link>
+            <Link to="/login" className="text-primary hover:text-primary/80 font-medium transition-colors">Back to Login</Link>
           </div>
         </CardContent>
       </Card>
