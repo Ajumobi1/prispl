@@ -114,8 +114,8 @@ export default function DashboardPage() {
       <header className="border-b bg-card px-4 py-3">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-foreground">DG / HOD Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Leadership summary view for Director General and Heads of Department.</p>
+            <h1 className="text-xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-sm text-muted-foreground">Leadership summary view.</p>
           </div>
           <nav className="flex items-center gap-2">
             <Button variant="ghost" size="sm" asChild><Link to="/task-tracker">Unit Tracker</Link></Button>
