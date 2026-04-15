@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
     // Create admin user via auth
     const { data: authData, error: authError } =
       await supabase.auth.admin.createUser({
-        email: "admin@prisp.local",
+        email: "admin@prsunitplatform.local",
         password: "admin",
         email_confirm: true,
         user_metadata: {

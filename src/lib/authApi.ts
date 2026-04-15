@@ -51,7 +51,7 @@ export async function loginSession(username: string, password: string) {
 
   // Sign in first (no profile lookup needed before auth)
   const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-    email: `${normalizedUsername}@prisp.local`,
+    email: `${normalizedUsername}@prsunitplatform.local`,
     password,
   });
 
@@ -129,9 +129,9 @@ export async function registerAccount(payload: {
     throw new Error("Username already exists.");
   }
 
-  // Sign up with Supabase auth using username@prisp.local as email
+  // Sign up with Supabase auth using username@prsunitplatform.local as email
   const { data: signUpData, error } = await supabase.auth.signUp({
-    email: `${normalizedUsername}@prisp.local`,
+    email: `${normalizedUsername}@prsunitplatform.local`,
     password: payload.password,
     options: {
       data: {
@@ -193,7 +193,7 @@ export async function fetchAdminUsers(): Promise<AccountUser[]> {
       id: p.user_id,
       full_name: p.full_name,
       username: p.username,
-      email: `${p.username}@prisp.local`,
+      email: `${p.username}@prsunitplatform.local`,
       department: p.department,
       role,
       status: p.status as AccountStatus,
@@ -234,7 +234,7 @@ export async function updateAdminUserStatus(
     id: userId,
     full_name: data.full_name,
     username: data.username,
-    email: `${data.username}@prisp.local`,
+    email: `${data.username}@prsunitplatform.local`,
     department: data.department,
     role,
     status: data.status as AccountStatus,
