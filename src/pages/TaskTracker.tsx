@@ -123,8 +123,8 @@ export default function TaskTrackerPage() {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem("prisp.taskTracker.monthTabs");
-      const storedClosed = localStorage.getItem("prisp.taskTracker.closedMonths");
+      const stored = localStorage.getItem("prsunitplatform.taskTracker.monthTabs");
+      const storedClosed = localStorage.getItem("prsunitplatform.taskTracker.closedMonths");
       if (stored) {
         const parsed = JSON.parse(stored) as string[];
         if (Array.isArray(parsed)) setCustomMonths(parsed.filter((m) => /^\d{4}-\d{2}$/.test(m)));
@@ -165,11 +165,11 @@ export default function TaskTrackerPage() {
   }, [navigate]);
 
   useEffect(() => {
-    localStorage.setItem("prisp.taskTracker.monthTabs", JSON.stringify(customMonths));
+    localStorage.setItem("prsunitplatform.taskTracker.monthTabs", JSON.stringify(customMonths));
   }, [customMonths]);
 
   useEffect(() => {
-    localStorage.setItem("prisp.taskTracker.closedMonths", JSON.stringify(closedMonths));
+    localStorage.setItem("prsunitplatform.taskTracker.closedMonths", JSON.stringify(closedMonths));
   }, [closedMonths]);
 
   if (!authChecked) {
