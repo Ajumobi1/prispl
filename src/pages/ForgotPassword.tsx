@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import ondoLogo from "@/assets/ondo-state-logo.png";
+import odchcLogo from "@/assets/odchc-logo.png";
 
 export default function ForgotPasswordPage() {
   const [step, setStep] = useState<"lookup" | "answer" | "done">("lookup");
@@ -21,8 +23,6 @@ export default function ForgotPasswordPage() {
     setIsSubmitting(true);
     try {
       const normalizedUsername = username.trim().toLowerCase();
-      // We need to look up the security question. Since unauthenticated users can't query profiles,
-      // we'll use the edge function which handles this server-side.
       const { data, error: fnError } = await supabase.functions.invoke("get-security-question", {
         body: { username: normalizedUsername },
       });
@@ -66,16 +66,20 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
+      <Card className="w-full max-w-md shadow-xl border-0">
+        <CardHeader className="text-center pb-2">
+          <div className="flex justify-center gap-4 mb-3">
+            <img src={ondoLogo} alt="Ondo State Logo" className="h-14 w-14 object-contain" />
+            <img src={odchcLogo} alt="ODCHC Logo" className="h-12 object-contain" />
+          </div>
           <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
           <CardDescription>Answer your security question to reset your password.</CardDescription>
         </CardHeader>
         <CardContent>
           {step === "lookup" && (
             <form onSubmit={lookupQuestion} className="space-y-4">
-              <Input placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required />
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
+              <Input placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required className="h-11" />
+              <Button type="submit" className="w-full h-11 font-semibold" disabled={isSubmitting}>
                 {isSubmitting ? "Looking up..." : "Find Account"}
               </Button>
             </form>
@@ -84,23 +88,23 @@ export default function ForgotPasswordPage() {
             <form onSubmit={resetPassword} className="space-y-4">
               <p className="text-sm font-medium text-foreground">Security Question:</p>
               <p className="text-sm text-muted-foreground">{securityQuestion}</p>
-              <Input placeholder="Your Answer" value={securityAnswer} onChange={(e) => setSecurityAnswer(e.target.value)} required />
-              <Input type="password" placeholder="New Password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
-              <Input type="password" placeholder="Confirm New Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
+              <Input placeholder="Your Answer" value={securityAnswer} onChange={(e) => setSecurityAnswer(e.target.value)} required className="h-11" />
+              <Input type="password" placeholder="New Password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required className="h-11" />
+              <Input type="password" placeholder="Confirm New Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className="h-11" />
+              <Button type="submit" className="w-full h-11 font-semibold" disabled={isSubmitting}>
                 {isSubmitting ? "Resetting..." : "Reset Password"}
               </Button>
             </form>
           )}
           {step === "done" && (
             <div className="space-y-4 text-center">
-              <p className="text-sm text-emerald-600">Password has been reset successfully!</p>
-              <Button asChild className="w-full"><Link to="/login">Back to Login</Link></Button>
+              <p className="text-sm text-accent font-medium">Password has been reset successfully!</p>
+              <Button asChild className="w-full h-11"><Link to="/login">Back to Login</Link></Button>
             </div>
           )}
           {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
           <div className="mt-4 text-center text-sm">
-            <Link to="/login" className="text-primary underline">Back to Login</Link>
+            <Link to="/login" className="text-primary hover:text-primary/80 font-medium transition-colors">Back to Login</Link>
           </div>
         </CardContent>
       </Card>
