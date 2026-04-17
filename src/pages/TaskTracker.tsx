@@ -389,8 +389,12 @@ export default function TaskTrackerPage() {
       <header className="border-b bg-primary text-primary-foreground px-4 py-3">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={ondoLogo} alt="Ondo State" className="h-10 w-10 object-contain" />
-            <img src={odchcLogo} alt="ODCHC" className="h-8 object-contain brightness-0 invert" />
+            <div className="rounded-md bg-white p-1 shadow-sm">
+              <img src={ondoLogo} alt="Ondo State" className="h-9 w-9 object-contain" />
+            </div>
+            <div className="rounded-md bg-white p-1 shadow-sm">
+              <img src={odchcLogo} alt="ODCHC" className="h-9 object-contain" />
+            </div>
             <div>
               <h1 className="text-lg font-bold">Unit Task Tracker</h1>
               <p className="text-xs text-primary-foreground/70">PR&S Unit — All Departments</p>
@@ -400,10 +404,10 @@ export default function TaskTrackerPage() {
             <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" asChild><Link to="/dashboard">Dashboard</Link></Button>
             <Button variant={viewMode === "table" ? "secondary" : "ghost"} size="sm" className={viewMode !== "table" ? "text-primary-foreground hover:bg-primary-foreground/10" : ""} onClick={() => setViewMode("table")}>Table View</Button>
             <Button variant={viewMode === "kanban" ? "secondary" : "ghost"} size="sm" className={viewMode !== "kanban" ? "text-primary-foreground hover:bg-primary-foreground/10" : ""} onClick={() => setViewMode("kanban")} disabled={isBusy}>Kanban</Button>
-            <Button variant="outline" size="sm" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" onClick={onDownloadEverything} disabled={isBusy}>
+            <Button variant="outline" size="sm" className="border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" onClick={onDownloadEverything} disabled={isBusy}>
               <Download className="mr-1 h-4 w-4" /> Export CSV
             </Button>
-            <Button variant="outline" size="sm" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" onClick={logout}>Logout</Button>
+            <Button variant="outline" size="sm" className="border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" onClick={logout}>Logout</Button>
           </nav>
         </div>
       </header>
