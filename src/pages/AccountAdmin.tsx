@@ -137,13 +137,13 @@ export default function AccountAdminPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card px-4 py-3">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Account Administration</h1>
-            <p className="text-sm text-muted-foreground">Approve, decline, lock, and unlock user access securely.</p>
+      <header className="border-b bg-card px-3 py-3 sm:px-4">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl font-bold text-foreground">Account Administration</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">Approve, decline, lock, and unlock user access securely.</p>
           </div>
-          <nav className="flex items-center gap-2">
+          <nav className="flex flex-wrap items-center gap-2 overflow-x-auto -mx-1 px-1 sm:overflow-visible">
             <Button variant="ghost" size="sm" asChild><Link to="/dashboard">Dashboard</Link></Button>
             <Button variant="ghost" size="sm" asChild><Link to="/task-tracker">Task Tracker</Link></Button>
             <Button variant="outline" size="sm" onClick={signOut}>Logout</Button>
@@ -151,7 +151,7 @@ export default function AccountAdminPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl space-y-6 p-4">
+      <main className="mx-auto max-w-6xl space-y-6 p-3 sm:p-4">
         {error && <p className="text-sm text-destructive">{error}</p>}
 
         {isLoading ? (
@@ -162,11 +162,11 @@ export default function AccountAdminPage() {
               <CardHeader>
                 <CardTitle className="capitalize">{entry.status} ({entry.users.length})</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="overflow-x-auto">
                 {entry.users.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No users in this state.</p>
                 ) : (
-                  <Table>
+                  <Table className="min-w-[700px]">
                     <TableHeader>
                       <TableRow>
                         <TableHead>Name</TableHead>
@@ -184,7 +184,7 @@ export default function AccountAdminPage() {
                           <TableCell>{user.department}</TableCell>
                           <TableCell>{user.role}</TableCell>
                           <TableCell>
-                            <div className="flex gap-1">
+                            <div className="flex flex-wrap gap-1">
                               {entry.status !== "approved" && (
                                 <Button size="sm" variant="default" onClick={() => updateStatus(user, "approved")} disabled={busyUserId === user.id}>
                                   Approve
