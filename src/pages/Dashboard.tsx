@@ -122,25 +122,48 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-primary text-primary-foreground px-3 py-3 sm:px-4">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div className="rounded-md bg-white p-1 shadow-sm shrink-0">
-              <img src={ondoLogo} alt="Ondo State" className="h-8 w-8 sm:h-9 sm:w-9 object-contain" />
+      <header className="border-b bg-gradient-to-r from-primary via-primary to-primary/90 text-primary-foreground shadow-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-3 py-3 sm:px-6 sm:py-4">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <div className="flex items-center gap-2">
+              <div className="rounded-lg bg-white p-1.5 shadow-md ring-1 ring-white/30 shrink-0">
+                <img src={ondoLogo} alt="Ondo State" className="h-9 w-9 sm:h-12 sm:w-12 object-contain" />
+              </div>
+              <div className="rounded-lg bg-white p-1.5 shadow-md ring-1 ring-white/30 shrink-0">
+                <img src={odchcLogo} alt="ODCHC" className="h-9 sm:h-12 w-auto object-contain" />
+              </div>
             </div>
-            <div className="rounded-md bg-white p-1 shadow-sm shrink-0">
-              <img src={odchcLogo} alt="ODCHC" className="h-8 sm:h-9 object-contain" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-base sm:text-lg font-bold truncate">Dashboard</h1>
-              <p className="text-[11px] sm:text-xs text-primary-foreground/70 truncate">PR&S Unit — Leadership Summary</p>
+            <div className="min-w-0 hidden sm:block">
+              <h1 className="text-sm sm:text-xl font-bold truncate tracking-tight">Dashboard</h1>
+              <p className="text-[10px] sm:text-xs text-primary-foreground/80 truncate">PR&S Unit — Leadership Summary</p>
             </div>
           </div>
-          <nav className="flex flex-wrap items-center gap-2 -mx-1 px-1 overflow-x-auto sm:overflow-visible">
+
+          {/* Desktop nav */}
+          <nav className="hidden md:flex items-center gap-2">
             <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" asChild><Link to="/task-tracker">Unit Tracker</Link></Button>
             {isAdmin && <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" asChild><Link to="/account-admin">Manage Accounts</Link></Button>}
-            <Button variant="outline" size="sm" className="border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" onClick={logout}>Logout</Button>
+            <Button variant="outline" size="sm" className="border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" onClick={logout}>
+              <LogOut className="mr-1 h-4 w-4" /> Logout
+            </Button>
           </nav>
+
+          {/* Mobile dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="md:hidden border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20">
+                <Menu className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52 bg-popover z-50">
+              <DropdownMenuLabel>Menu</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild><Link to="/task-tracker"><ListChecks className="mr-2 h-4 w-4" />Unit Tracker</Link></DropdownMenuItem>
+              {isAdmin && <DropdownMenuItem asChild><Link to="/account-admin"><Users className="mr-2 h-4 w-4" />Manage Accounts</Link></DropdownMenuItem>}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive"><LogOut className="mr-2 h-4 w-4" />Logout</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
