@@ -113,21 +113,21 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-primary text-primary-foreground px-4 py-3">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="rounded-md bg-white p-1 shadow-sm">
-              <img src={ondoLogo} alt="Ondo State" className="h-9 w-9 object-contain" />
+      <header className="border-b bg-primary text-primary-foreground px-3 py-3 sm:px-4">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="rounded-md bg-white p-1 shadow-sm shrink-0">
+              <img src={ondoLogo} alt="Ondo State" className="h-8 w-8 sm:h-9 sm:w-9 object-contain" />
             </div>
-            <div className="rounded-md bg-white p-1 shadow-sm">
-              <img src={odchcLogo} alt="ODCHC" className="h-9 object-contain" />
+            <div className="rounded-md bg-white p-1 shadow-sm shrink-0">
+              <img src={odchcLogo} alt="ODCHC" className="h-8 sm:h-9 object-contain" />
             </div>
-            <div>
-              <h1 className="text-lg font-bold">Dashboard</h1>
-              <p className="text-xs text-primary-foreground/70">PR&S Unit — Leadership Summary</p>
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-lg font-bold truncate">Dashboard</h1>
+              <p className="text-[11px] sm:text-xs text-primary-foreground/70 truncate">PR&S Unit — Leadership Summary</p>
             </div>
           </div>
-          <nav className="flex items-center gap-2">
+          <nav className="flex flex-wrap items-center gap-2 -mx-1 px-1 overflow-x-auto sm:overflow-visible">
             <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" asChild><Link to="/task-tracker">Unit Tracker</Link></Button>
             {isAdmin && <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" asChild><Link to="/account-admin">Manage Accounts</Link></Button>}
             <Button variant="outline" size="sm" className="border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" onClick={logout}>Logout</Button>
@@ -172,7 +172,7 @@ export default function DashboardPage() {
             <CardTitle>Department Snapshot</CardTitle>
             <CardDescription>Task volume by unit for {formatMonthLabel(selectedMonth)}.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-x-auto">
             <Table>
               <TableHeader><TableRow><TableHead>Department</TableHead><TableHead>Tasks</TableHead></TableRow></TableHeader>
               <TableBody>
@@ -189,7 +189,7 @@ export default function DashboardPage() {
             <CardTitle>Task Overview</CardTitle>
             <CardDescription>Read-only listing for leadership monitoring.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
