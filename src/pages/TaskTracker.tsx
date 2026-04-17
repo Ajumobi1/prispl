@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Download } from "lucide-react";
+import { Download, LogOut, Menu, LayoutDashboard, Table as TableIcon, Columns3 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import ondoLogo from "@/assets/ondo-state-logo.png";
 import odchcLogo from "@/assets/odchc-logo.png";
 import { Badge } from "@/components/ui/badge";
@@ -386,52 +394,75 @@ export default function TaskTrackerPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-primary text-primary-foreground px-3 py-3 sm:px-4">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div className="rounded-md bg-white p-1 shadow-sm shrink-0">
-              <img src={ondoLogo} alt="Ondo State" className="h-8 w-8 sm:h-9 sm:w-9 object-contain" />
+      <header className="border-b bg-gradient-to-r from-primary via-primary to-primary/90 text-primary-foreground shadow-md">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-3 py-3 sm:px-6 sm:py-4">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <div className="flex items-center gap-2">
+              <div className="rounded-lg bg-white p-1.5 shadow-md ring-1 ring-white/30 shrink-0">
+                <img src={ondoLogo} alt="Ondo State" className="h-9 w-9 sm:h-12 sm:w-12 object-contain" />
+              </div>
+              <div className="rounded-lg bg-white p-1.5 shadow-md ring-1 ring-white/30 shrink-0">
+                <img src={odchcLogo} alt="ODCHC" className="h-9 sm:h-12 w-auto object-contain" />
+              </div>
             </div>
-            <div className="rounded-md bg-white p-1 shadow-sm shrink-0">
-              <img src={odchcLogo} alt="ODCHC" className="h-8 sm:h-9 object-contain" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-base sm:text-lg font-bold truncate">Unit Task Tracker</h1>
-              <p className="text-[11px] sm:text-xs text-primary-foreground/70 truncate">PR&S Unit — All Departments</p>
+            <div className="min-w-0 hidden sm:block">
+              <h1 className="text-sm sm:text-xl font-bold truncate tracking-tight">Unit Task Tracker</h1>
+              <p className="text-[10px] sm:text-xs text-primary-foreground/80 truncate">PR&S Unit — All Departments</p>
             </div>
           </div>
-          <nav className="flex flex-wrap items-center gap-2 overflow-x-auto -mx-1 px-1 lg:overflow-visible">
+
+          {/* Desktop nav */}
+          <nav className="hidden lg:flex items-center gap-2">
             <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" asChild><Link to="/dashboard">Dashboard</Link></Button>
             <Button variant={viewMode === "table" ? "secondary" : "ghost"} size="sm" className={viewMode !== "table" ? "text-primary-foreground hover:bg-primary-foreground/10" : ""} onClick={() => setViewMode("table")}>Table</Button>
             <Button variant={viewMode === "kanban" ? "secondary" : "ghost"} size="sm" className={viewMode !== "kanban" ? "text-primary-foreground hover:bg-primary-foreground/10" : ""} onClick={() => setViewMode("kanban")} disabled={isBusy}>Kanban</Button>
             <Button variant="outline" size="sm" className="border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" onClick={onDownloadEverything} disabled={isBusy}>
               <Download className="mr-1 h-4 w-4" /> Export
             </Button>
-            <Button variant="outline" size="sm" className="border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" onClick={logout}>Logout</Button>
+            <Button variant="outline" size="sm" className="border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" onClick={logout}>
+              <LogOut className="mr-1 h-4 w-4" /> Logout
+            </Button>
           </nav>
+
+          {/* Mobile dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="lg:hidden border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20">
+                <Menu className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52 bg-popover z-50">
+              <DropdownMenuLabel>Menu</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild><Link to="/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" />Dashboard</Link></DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setViewMode("table")}><TableIcon className="mr-2 h-4 w-4" />Table view</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setViewMode("kanban")}><Columns3 className="mr-2 h-4 w-4" />Kanban view</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onDownloadEverything} disabled={isBusy}><Download className="mr-2 h-4 w-4" />Export CSV</DropdownMenuItem>
+              <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive"><LogOut className="mr-2 h-4 w-4" />Logout</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
       <main className="mx-auto max-w-7xl space-y-6 p-3 sm:p-4">
         {error && <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
 
-        {/* Month Tabs */}
+        {/* Month selector */}
         <div className="flex flex-wrap items-center gap-2">
-          {monthTabs.map((month) => (
-            <div key={month} className="flex items-center gap-1">
-              <Button
-                variant={selectedMonth === month ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedMonth(month)}
-              >
-                {formatMonthLabel(month)}
-              </Button>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-xs text-muted-foreground" onClick={() => closeMonthTab(month)}>×</Button>
-            </div>
-          ))}
-          <div className="flex items-center gap-1">
-            <Input type="month" value={newMonthInput} onChange={(e) => setNewMonthInput(e.target.value)} className="h-8 w-36" />
-            <Button size="sm" variant="outline" onClick={addMonthTab}>+ Month</Button>
+          <span className="text-sm font-medium text-foreground">Month</span>
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="w-44 sm:w-52"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {monthTabs.map((month) => (
+                <SelectItem key={month} value={month}>{formatMonthLabel(month)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => closeMonthTab(selectedMonth)}>Close month</Button>
+          <div className="flex items-center gap-1 ml-auto">
+            <Input type="month" value={newMonthInput} onChange={(e) => setNewMonthInput(e.target.value)} className="h-9 w-36" />
+            <Button size="sm" variant="outline" onClick={addMonthTab}>+ Add</Button>
           </div>
         </div>
 
@@ -477,7 +508,7 @@ export default function TaskTrackerPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <Select value={form.unit} onValueChange={(v) => setForm((p) => ({ ...p, unit: v }))}>
                 <SelectTrigger><SelectValue placeholder="Unit" /></SelectTrigger>
                 <SelectContent>
@@ -498,9 +529,13 @@ export default function TaskTrackerPage() {
                   {priorities.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <div className="flex gap-2">
-                <Input type="date" value={form.dateAssigned} onChange={(e) => setForm((p) => ({ ...p, dateAssigned: e.target.value }))} />
-                <Input type="date" value={form.dueDate} onChange={(e) => setForm((p) => ({ ...p, dueDate: e.target.value }))} />
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Start Date</label>
+                <Input type="date" value={form.dateAssigned} onChange={(e) => setForm((p) => ({ ...p, dateAssigned: e.target.value }))} className="w-full" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">End Date</label>
+                <Input type="date" value={form.dueDate} onChange={(e) => setForm((p) => ({ ...p, dueDate: e.target.value }))} className="w-full" />
               </div>
             </div>
 
