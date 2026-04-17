@@ -508,7 +508,7 @@ export default function TaskTrackerPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <Select value={form.unit} onValueChange={(v) => setForm((p) => ({ ...p, unit: v }))}>
                 <SelectTrigger><SelectValue placeholder="Unit" /></SelectTrigger>
                 <SelectContent>
@@ -529,9 +529,13 @@ export default function TaskTrackerPage() {
                   {priorities.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <div className="flex gap-2">
-                <Input type="date" value={form.dateAssigned} onChange={(e) => setForm((p) => ({ ...p, dateAssigned: e.target.value }))} />
-                <Input type="date" value={form.dueDate} onChange={(e) => setForm((p) => ({ ...p, dueDate: e.target.value }))} />
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Start Date</label>
+                <Input type="date" value={form.dateAssigned} onChange={(e) => setForm((p) => ({ ...p, dateAssigned: e.target.value }))} className="w-full" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">End Date</label>
+                <Input type="date" value={form.dueDate} onChange={(e) => setForm((p) => ({ ...p, dueDate: e.target.value }))} className="w-full" />
               </div>
             </div>
 
