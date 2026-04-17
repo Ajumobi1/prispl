@@ -116,8 +116,12 @@ export default function DashboardPage() {
       <header className="border-b bg-primary text-primary-foreground px-4 py-3">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={ondoLogo} alt="Ondo State" className="h-10 w-10 object-contain" />
-            <img src={odchcLogo} alt="ODCHC" className="h-8 object-contain brightness-0 invert" />
+            <div className="rounded-md bg-white p-1 shadow-sm">
+              <img src={ondoLogo} alt="Ondo State" className="h-9 w-9 object-contain" />
+            </div>
+            <div className="rounded-md bg-white p-1 shadow-sm">
+              <img src={odchcLogo} alt="ODCHC" className="h-9 object-contain" />
+            </div>
             <div>
               <h1 className="text-lg font-bold">Dashboard</h1>
               <p className="text-xs text-primary-foreground/70">PR&S Unit — Leadership Summary</p>
