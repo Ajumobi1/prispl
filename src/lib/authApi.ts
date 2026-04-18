@@ -146,22 +146,19 @@ export async function registerAccount(payload: {
     throw new Error(error.message);
   }
 
-  // Update the profile with security question and hashed answer
+  // Set security question/answer via edge function (uses service role to bypass
+  // the column-level lockdown that hides security_answer from all clients).
   if (signUpData.user) {
-    const answerNormalized = payload.securityAnswer.toLowerCase().trim();
-    const encoder = new TextEncoder();
-    const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(answerNormalized));
-    const hashedAnswer = Array.from(new Uint8Array(hashBuffer))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-
-    await supabase
-      .from("profiles")
-      .update({
-        security_question: payload.securityQuestion,
-        security_answer: hashedAnswer,
-      })
-      .eq("user_id", signUpData.user.id);
+    const { error: secError } = await supabase.functions.invoke("set-security-answer", {
+      body: {
+        userId: signUpData.user.id,
+        securityQuestion: payload.securityQuestion,
+        securityAnswer: payload.securityAnswer,
+      },
+    });
+    if (secError) {
+      console.error("Failed to set security answer:", secError);
+    }
   }
 
   // Sign out immediately since the account needs admin approval
