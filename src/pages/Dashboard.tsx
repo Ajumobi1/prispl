@@ -124,7 +124,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-gradient-to-r from-primary via-primary to-primary/90 text-primary-foreground shadow-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-2 py-2 sm:px-6 sm:py-4">
-          <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 min-w-0 flex-1">
             <div className="flex items-center gap-2 shrink-0">
               <div className="rounded-xl bg-white p-1.5 sm:p-2 shadow-lg ring-1 ring-white/40">
                 <img src={ondoLogo} alt="Ondo State" className="h-12 w-12 sm:h-14 sm:w-14 object-contain" />
@@ -133,9 +133,9 @@ export default function DashboardPage() {
                 <img src={odchcLogo} alt="ODCHC" className="h-12 w-auto sm:h-16 object-contain" />
               </div>
             </div>
-            <div className="min-w-0 flex-1">
-              <h1 className="text-sm sm:text-xl font-bold truncate tracking-tight">Dashboard</h1>
-              <p className="text-[10px] sm:text-xs text-primary-foreground/80 truncate">PR&S Unit — Leadership Summary</p>
+            <div className="min-w-0 flex-1 sm:border-l sm:border-primary-foreground/20 sm:pl-4">
+              <h1 className="text-base sm:text-xl font-bold tracking-tight leading-tight">Dashboard</h1>
+              <p className="text-[11px] sm:text-xs text-primary-foreground/80 leading-tight">PR&S Unit — Leadership Summary</p>
             </div>
           </div>
 
