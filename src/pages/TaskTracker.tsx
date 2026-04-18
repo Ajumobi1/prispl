@@ -395,17 +395,17 @@ export default function TaskTrackerPage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-gradient-to-r from-primary via-primary to-primary/90 text-primary-foreground shadow-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-3 py-3 sm:px-6 sm:py-4">
-          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-            <div className="flex items-center gap-2">
-              <div className="rounded-lg bg-white p-1.5 shadow-md ring-1 ring-white/30 shrink-0">
-                <img src={ondoLogo} alt="Ondo State" className="h-9 w-9 sm:h-12 sm:w-12 object-contain" />
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-2 py-2 sm:px-6 sm:py-4">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 shrink-0">
+              <div className="rounded-lg bg-white p-1 sm:p-1.5 shadow-md ring-1 ring-white/30">
+                <img src={ondoLogo} alt="Ondo State" className="h-8 w-8 sm:h-12 sm:w-12 object-contain" />
               </div>
-              <div className="rounded-lg bg-white p-1.5 shadow-md ring-1 ring-white/30 shrink-0">
-                <img src={odchcLogo} alt="ODCHC" className="h-9 sm:h-12 w-auto object-contain" />
+              <div className="rounded-lg bg-white p-1 sm:p-1.5 shadow-md ring-1 ring-white/30">
+                <img src={odchcLogo} alt="ODCHC" className="h-8 w-8 sm:h-12 sm:w-auto object-contain" />
               </div>
             </div>
-            <div className="min-w-0 hidden sm:block">
+            <div className="min-w-0 flex-1">
               <h1 className="text-sm sm:text-xl font-bold truncate tracking-tight">Unit Task Tracker</h1>
               <p className="text-[10px] sm:text-xs text-primary-foreground/80 truncate">PR&S Unit — All Departments</p>
             </div>
