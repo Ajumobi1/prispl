@@ -81,6 +81,23 @@ export async function fetchTasks(): Promise<PRSTask[]> {
   return (data ?? []).map(rowToTask);
 }
 
+async function getUploaderName(userId: string | undefined): Promise<string> {
+  if (!userId) return "Unknown";
+  const { data } = await supabase
+    .from("profiles")
+    .select("full_name, username")
+    .eq("user_id", userId)
+    .maybeSingle();
+  return data?.full_name || data?.username || "Unknown";
+}
+
+function fireTelegramBackup(payload: Record<string, unknown>): void {
+  // Fire-and-forget so Telegram delivery never blocks user actions.
+  supabase.functions.invoke("telegram-backup", { body: payload }).catch((err) => {
+    console.warn("Telegram backup failed:", err);
+  });
+}
+
 export async function createTask(payload: CreateTaskPayload): Promise<PRSTask> {
   const { data: { session } } = await supabase.auth.getSession();
 
@@ -104,7 +121,10 @@ export async function createTask(payload: CreateTaskPayload): Promise<PRSTask> {
     .single();
 
   if (error) throw new Error(error.message);
-  return rowToTask(data);
+  const task = rowToTask(data);
+  const uploader = await getUploaderName(session?.user?.id);
+  fireTelegramBackup({ type: "task", task, uploader });
+  return task;
 }
 
 export async function updateTask(taskId: string, payload: CreateTaskPayload): Promise<PRSTask> {
@@ -153,6 +173,7 @@ export async function downloadTasks(format: "csv" | "xlsx" | "pdf"): Promise<voi
 export async function uploadTaskAttachments(taskId: string, files: File[]): Promise<TaskAttachment[]> {
   const { data: { session } } = await supabase.auth.getSession();
   const results: TaskAttachment[] = [];
+  const uploader = await getUploaderName(session?.user?.id);
 
   for (const file of files) {
     const filePath = `${taskId}/${Date.now()}-${file.name}`;
@@ -186,6 +207,8 @@ export async function uploadTaskAttachments(taskId: string, files: File[]): Prom
       fileSize: Number(data.file_size),
       uploadedAt: data.created_at,
     });
+
+    fireTelegramBackup({ type: "file", taskId, attachmentId: data.id, uploader });
   }
 
   return results;
