@@ -39,8 +39,22 @@ async function sendMessage(text: string) {
   return data;
 }
 
-function buildTasksXlsx(tasks: any[]): Uint8Array {
-  const rows = tasks.map((t) => ({
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+function monthKey(dateStr: string | null | undefined): { key: string; label: string } {
+  if (!dateStr) return { key: "0000-00", label: "Undated" };
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return { key: "0000-00", label: "Undated" };
+  const y = d.getFullYear();
+  const m = d.getMonth();
+  return { key: `${y}-${String(m + 1).padStart(2, "0")}`, label: `${MONTH_NAMES[m]} ${y}` };
+}
+
+function toRow(t: any) {
+  return {
     "S/N": t.serial_number,
     Unit: t.unit,
     Task: t.task_title,
@@ -53,10 +67,33 @@ function buildTasksXlsx(tasks: any[]): Uint8Array {
     Deliverable: t.deliverable,
     Checklist: t.checklist,
     Remarks: t.remarks,
-  }));
-  const ws = XLSX.utils.json_to_sheet(rows);
+  };
+}
+
+function buildTasksXlsx(tasks: any[]): Uint8Array {
+  // Group tasks by month of date_assigned
+  const groups = new Map<string, { label: string; rows: any[] }>();
+  for (const t of tasks) {
+    const { key, label } = monthKey(t.date_assigned);
+    if (!groups.has(key)) groups.set(key, { label, rows: [] });
+    groups.get(key)!.rows.push(toRow(t));
+  }
+
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "PRS Tasks");
+  const sortedKeys = [...groups.keys()].sort();
+
+  if (sortedKeys.length === 0) {
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([]), "PRS Tasks");
+  } else {
+    for (const key of sortedKeys) {
+      const { label, rows } = groups.get(key)!;
+      const ws = XLSX.utils.json_to_sheet(rows);
+      // Excel sheet names: max 31 chars, no : \ / ? * [ ]
+      const safeName = label.replace(/[:\\/?*\[\]]/g, "").slice(0, 31);
+      XLSX.utils.book_append_sheet(wb, ws, safeName);
+    }
+  }
+
   const buf = XLSX.write(wb, { type: "array", bookType: "xlsx" });
   return new Uint8Array(buf);
 }
