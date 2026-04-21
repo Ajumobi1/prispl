@@ -70,32 +70,37 @@ function toRow(t: any) {
   };
 }
 
-function buildTasksXlsx(tasks: any[]): Uint8Array {
-  // Group tasks by month of date_assigned
+const MONTH_ABBR = [
+  "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+  "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
+];
+
+function monthFileTag(key: string, label: string): string {
+  // key format: "YYYY-MM" -> "JAN2025"; fallback for "Undated"
+  if (key === "0000-00") return "UNDATED";
+  const [y, m] = key.split("-");
+  const idx = parseInt(m, 10) - 1;
+  if (idx < 0 || idx > 11) return label.replace(/\s+/g, "");
+  return `${MONTH_ABBR[idx]}${y}`;
+}
+
+function buildSingleMonthXlsx(rows: any[], sheetLabel: string): Uint8Array {
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const safeName = sheetLabel.replace(/[:\\/?*\[\]]/g, "").slice(0, 31);
+  XLSX.utils.book_append_sheet(wb, ws, safeName || "Tasks");
+  const buf = XLSX.write(wb, { type: "array", bookType: "xlsx" });
+  return new Uint8Array(buf);
+}
+
+function groupTasksByMonth(tasks: any[]) {
   const groups = new Map<string, { label: string; rows: any[] }>();
   for (const t of tasks) {
     const { key, label } = monthKey(t.date_assigned);
     if (!groups.has(key)) groups.set(key, { label, rows: [] });
     groups.get(key)!.rows.push(toRow(t));
   }
-
-  const wb = XLSX.utils.book_new();
-  const sortedKeys = [...groups.keys()].sort();
-
-  if (sortedKeys.length === 0) {
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([]), "PRS Tasks");
-  } else {
-    for (const key of sortedKeys) {
-      const { label, rows } = groups.get(key)!;
-      const ws = XLSX.utils.json_to_sheet(rows);
-      // Excel sheet names: max 31 chars, no : \ / ? * [ ]
-      const safeName = label.replace(/[:\\/?*\[\]]/g, "").slice(0, 31);
-      XLSX.utils.book_append_sheet(wb, ws, safeName);
-    }
-  }
-
-  const buf = XLSX.write(wb, { type: "array", bookType: "xlsx" });
-  return new Uint8Array(buf);
+  return groups;
 }
 
 Deno.serve(async (req) => {
