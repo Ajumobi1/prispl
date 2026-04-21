@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
     const nowStr = new Date().toLocaleString("en-GB", { timeZone: "Africa/Lagos" });
 
     if (body.type === "task") {
-      // Send Excel of all tasks + a header summary of the new task
+      // Fetch all tasks, group by month-year, send a separate file per group
       const { data: tasks, error } = await supabase
         .from("tasks")
         .select("*")
@@ -125,25 +125,49 @@ Deno.serve(async (req) => {
 
       const t = body.task ?? {};
       const uploader = body.uploader ?? "Unknown";
-      const caption =
+
+      const newTaskMonth = monthKey(t.dateAssigned ?? t.date_assigned ?? null);
+      const newTaskTag = monthFileTag(newTaskMonth.key, newTaskMonth.label);
+
+      const headerMsg =
         `🆕 <b>New Task Added</b>\n` +
         `<b>By:</b> ${uploader}\n` +
         `<b>When:</b> ${nowStr}\n` +
         `<b>Unit:</b> ${t.unit ?? "-"}\n` +
         `<b>Title:</b> ${t.taskTitle ?? "-"}\n` +
         `<b>Assignee:</b> ${t.assignee ?? "-"}\n` +
-        `<b>Due:</b> ${t.dueDate ?? "-"}\n\n` +
-        `📊 Full backup attached (${tasks?.length ?? 0} tasks).`;
+        `<b>Start:</b> ${t.dateAssigned ?? "-"}\n` +
+        `<b>Due:</b> ${t.dueDate ?? "-"}\n` +
+        `<b>Month:</b> ${newTaskTag}\n\n` +
+        `📊 Backup files (one per month) follow.`;
+      await sendMessage(headerMsg);
 
-      const xlsx = buildTasksXlsx(tasks ?? []);
-      const date = new Date().toISOString().slice(0, 10);
-      await sendDocument(
-        `prs-tasks-${date}.xlsx`,
-        xlsx,
-        caption,
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-      );
-      return new Response(JSON.stringify({ ok: true }), {
+      const groups = groupTasksByMonth(tasks ?? []);
+      const sortedKeys = [...groups.keys()].sort();
+
+      if (sortedKeys.length === 0) {
+        await sendMessage("ℹ️ No tasks to back up yet.");
+      } else {
+        for (const key of sortedKeys) {
+          const { label, rows } = groups.get(key)!;
+          const tag = monthFileTag(key, label);
+          const xlsx = buildSingleMonthXlsx(rows, label);
+          const filename = `prs-tasks-${tag}.xlsx`;
+          const isNewTaskMonth = key === newTaskMonth.key;
+          const caption =
+            `📅 <b>${label}</b> ${isNewTaskMonth ? "⭐" : ""}\n` +
+            `<b>Month tag:</b> ${tag}\n` +
+            `<b>Tasks in file:</b> ${rows.length}`;
+          await sendDocument(
+            filename,
+            xlsx,
+            caption,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          );
+        }
+      }
+
+      return new Response(JSON.stringify({ ok: true, groups: sortedKeys.length }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
