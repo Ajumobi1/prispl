@@ -1,5 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { PRSTask, TaskPriority, TaskStatus, UnitName } from "./task-types";
+
+// Re-export from new module for backwards compatibility
+export { downloadTasks } from "./exports";
+
+type TaskRow = Tables<"tasks">;
+type AttachmentRow = Tables<"task_attachments">;
 
 export interface TaskAttachment {
   id: string;
@@ -25,35 +32,7 @@ export interface CreateTaskPayload {
   remarks: string;
 }
 
-function downloadBlob(content: string, contentType: string, filename: string): void {
-  const blob = new Blob([content], { type: contentType });
-  const blobUrl = window.URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = blobUrl;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  document.body.removeChild(anchor);
-  window.URL.revokeObjectURL(blobUrl);
-}
-
-function asCsv(tasks: PRSTask[]): string {
-  const headers = [
-    "S/N", "Unit", "Task", "Description", "Assignee",
-    "Start Date", "End Date", "Status", "Priority",
-    "Deliverable", "Checklist", "Remarks",
-  ];
-  const escape = (value: string) => `"${value.replace(/"/g, '""')}"`;
-  const rows = tasks.map((task) => [
-    String(task.serialNumber), task.unit, task.taskTitle,
-    task.taskDescription, task.assignee, task.dateAssigned,
-    task.dueDate, task.status, task.priority,
-    task.deliverable, task.checklist, task.remarks,
-  ]);
-  return [headers, ...rows].map((row) => row.map((cell) => escape(cell ?? "")).join(",")).join("\n");
-}
-
-function rowToTask(row: any): PRSTask {
+function rowToTask(row: TaskRow): PRSTask {
   return {
     id: row.id,
     serialNumber: row.serial_number,
@@ -151,24 +130,7 @@ export async function updateTask(taskId: string, payload: CreateTaskPayload): Pr
   return rowToTask(data);
 }
 
-export async function downloadTasks(format: "csv" | "xlsx" | "pdf"): Promise<void> {
-  const tasks = await fetchTasks();
-  const now = new Date().toISOString().slice(0, 10);
-
-  if (format === "csv") {
-    downloadBlob(asCsv(tasks), "text/csv;charset=utf-8", `prs-task-tracker-${now}.csv`);
-    return;
-  }
-  if (format === "xlsx") {
-    downloadBlob(asCsv(tasks), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", `prs-task-tracker-${now}.xlsx`);
-    return;
-  }
-  const pdfLike = [
-    "PR&S Task Tracker", "",
-    ...tasks.map((t) => `${t.serialNumber}. ${t.taskTitle} | ${t.unit} | ${t.assignee} | ${t.status} | ${t.dueDate}`),
-  ].join("\n");
-  downloadBlob(pdfLike, "application/pdf", `prs-task-tracker-${now}.pdf`);
-}
+// downloadTasks is re-exported from ./exports above
 
 export async function uploadTaskAttachments(taskId: string, files: File[]): Promise<TaskAttachment[]> {
   const { data: { session } } = await supabase.auth.getSession();
@@ -223,7 +185,7 @@ export async function fetchTaskAttachments(taskId: string): Promise<TaskAttachme
 
   if (error) throw new Error(error.message);
 
-  return (data ?? []).map((a: any) => ({
+  return (data ?? []).map((a: AttachmentRow) => ({
     id: a.id,
     taskId: a.task_id,
     fileName: a.file_name,
