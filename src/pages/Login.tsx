@@ -4,6 +4,7 @@ import { loginSession } from "@/lib/authApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import SEO from "@/components/SEO";
 import ondoLogo from "@/assets/ondo-state-logo.png";
 import odchcLogo from "@/assets/odchc-logo.png";
 
@@ -39,6 +40,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen">
+      <SEO title="Sign in" description="Sign in to the PR&S Unit Platform." canonicalPath="/login" />
       {/* Left panel - branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-primary relative flex-col items-center justify-center p-12 text-primary-foreground overflow-hidden">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 20% 50%, hsl(39 95% 55% / 0.3) 0%, transparent 50%), radial-gradient(circle at 80% 20%, hsl(160 45% 40% / 0.2) 0%, transparent 40%)" }} />
