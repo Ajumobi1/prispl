@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Approved users can delete attachments storage" ON storage.objects;
