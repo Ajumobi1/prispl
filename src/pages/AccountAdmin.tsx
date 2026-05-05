@@ -23,7 +23,7 @@ import {
   AccountUser,
   fetchAdminUsers,
   getCurrentSession,
-  logoutSession,
+  
   updateAdminUserStatus,
 } from "@/lib/authApi";
 import { supabase } from "@/integrations/supabase/client";
