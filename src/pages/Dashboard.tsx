@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, Menu, ListChecks, Users } from "lucide-react";
+import { Menu, ListChecks, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,11 +27,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getCurrentSession, logoutSession } from "@/lib/authApi";
+import { getCurrentSession } from "@/lib/authApi";
 import { fetchTasks } from "@/lib/api";
 import { PRSTask, TaskStatus, UnitName } from "@/lib/task-types";
 import ondoLogo from "@/assets/ondo-state-logo.png";
 import odchcLogo from "@/assets/odchc-logo.png";
+import UserMenu from "@/components/UserMenu";
 
 const statusVariant: Record<TaskStatus, "secondary" | "default" | "destructive" | "outline"> = {
   "Not Started": "secondary",
@@ -111,11 +112,6 @@ export default function DashboardPage() {
     }));
   }, [visibleTasks]);
 
-  const logout = async () => {
-    await logoutSession();
-    navigate("/login");
-  };
-
   if (!sessionChecked) {
     return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading dashboard...</div>;
   }
@@ -143,9 +139,7 @@ export default function DashboardPage() {
           <nav className="hidden md:flex items-center gap-2">
             <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" asChild><Link to="/task-tracker">Unit Tracker</Link></Button>
             {isAdmin && <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" asChild><Link to="/account-admin">Manage Accounts</Link></Button>}
-            <Button variant="outline" size="sm" className="border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" onClick={logout}>
-              <LogOut className="mr-1 h-4 w-4" /> Logout
-            </Button>
+            <UserMenu variant="header" />
           </nav>
 
           {/* Mobile dropdown */}
@@ -160,8 +154,6 @@ export default function DashboardPage() {
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild><Link to="/task-tracker"><ListChecks className="mr-2 h-4 w-4" />Unit Tracker</Link></DropdownMenuItem>
               {isAdmin && <DropdownMenuItem asChild><Link to="/account-admin"><Users className="mr-2 h-4 w-4" />Manage Accounts</Link></DropdownMenuItem>}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive"><LogOut className="mr-2 h-4 w-4" />Logout</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

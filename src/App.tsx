@@ -13,6 +13,7 @@ const ForgotPasswordPage = lazy(() => import("./pages/ForgotPassword"));
 const TaskTrackerPage = lazy(() => import("./pages/TaskTracker"));
 const DashboardPage = lazy(() => import("./pages/Dashboard"));
 const AccountAdminPage = lazy(() => import("./pages/AccountAdmin"));
+const ProfilePage = lazy(() => import("./pages/Profile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -65,6 +66,14 @@ const App = () => (
                 element={
                   <RequireAuth adminOnly>
                     <AccountAdminPage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <RequireAuth>
+                    <ProfilePage />
                   </RequireAuth>
                 }
               />

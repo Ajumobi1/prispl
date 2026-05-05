@@ -23,10 +23,11 @@ import {
   AccountUser,
   fetchAdminUsers,
   getCurrentSession,
-  logoutSession,
+  
   updateAdminUserStatus,
 } from "@/lib/authApi";
 import { supabase } from "@/integrations/supabase/client";
+import UserMenu from "@/components/UserMenu";
 
 const orderedStatus: AccountStatus[] = ["pending", "approved", "locked", "declined"];
 
@@ -126,10 +127,6 @@ export default function AccountAdminPage() {
     setResetSuccess(false);
   };
 
-  const signOut = async () => {
-    await logoutSession();
-    navigate("/login");
-  };
 
   if (!sessionChecked && isLoading) {
     return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading account administration...</div>;
@@ -146,7 +143,7 @@ export default function AccountAdminPage() {
           <nav className="flex flex-wrap items-center gap-2 overflow-x-auto -mx-1 px-1 sm:overflow-visible">
             <Button variant="ghost" size="sm" asChild><Link to="/dashboard">Dashboard</Link></Button>
             <Button variant="ghost" size="sm" asChild><Link to="/task-tracker">Task Tracker</Link></Button>
-            <Button variant="outline" size="sm" onClick={signOut}>Logout</Button>
+            <UserMenu />
           </nav>
         </div>
       </header>
