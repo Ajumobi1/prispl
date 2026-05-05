@@ -127,10 +127,6 @@ export default function AccountAdminPage() {
     setResetSuccess(false);
   };
 
-  const signOut = async () => {
-    await logoutSession();
-    navigate("/login");
-  };
 
   if (!sessionChecked && isLoading) {
     return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading account administration...</div>;
