@@ -386,11 +386,6 @@ export default function TaskTrackerPage() {
     }
   };
 
-  const logout = async () => {
-    await logoutSession();
-    navigate("/login");
-  };
-
   const closedMonthTabs = [...closedMonths].sort((a, b) => b.localeCompare(a));
 
   return (
