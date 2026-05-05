@@ -419,9 +419,7 @@ export default function TaskTrackerPage() {
             <Button variant="outline" size="sm" className="border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" onClick={onDownloadEverything} disabled={isBusy}>
               <Download className="mr-1 h-4 w-4" /> Export
             </Button>
-            <Button variant="outline" size="sm" className="border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" onClick={logout}>
-              <LogOut className="mr-1 h-4 w-4" /> Logout
-            </Button>
+            <UserMenu variant="header" />
           </nav>
 
           {/* Mobile dropdown */}
