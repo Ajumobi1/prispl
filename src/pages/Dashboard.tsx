@@ -112,11 +112,6 @@ export default function DashboardPage() {
     }));
   }, [visibleTasks]);
 
-  const logout = async () => {
-    await logoutSession();
-    navigate("/login");
-  };
-
   if (!sessionChecked) {
     return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading dashboard...</div>;
   }
