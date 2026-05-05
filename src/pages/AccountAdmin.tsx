@@ -27,6 +27,7 @@ import {
   updateAdminUserStatus,
 } from "@/lib/authApi";
 import { supabase } from "@/integrations/supabase/client";
+import UserMenu from "@/components/UserMenu";
 
 const orderedStatus: AccountStatus[] = ["pending", "approved", "locked", "declined"];
 
