@@ -40,7 +40,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen">
-      <SEO title="Sign in" description="Sign in to the PR&S Unit Platform." canonicalPath="/login" />
+      <SEO title="Sign in" description="Sign in to the PR&S Department Platform." canonicalPath="/login" />
       {/* Left panel - branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-primary relative flex-col items-center justify-center p-12 text-primary-foreground overflow-hidden">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 20% 50%, hsl(39 95% 55% / 0.3) 0%, transparent 50%), radial-gradient(circle at 80% 20%, hsl(160 45% 40% / 0.2) 0%, transparent 40%)" }} />
@@ -50,8 +50,8 @@ export default function LoginPage() {
             <img src={odchcLogo} alt="ODCHC Logo" className="h-20 object-contain" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">PR&S Unit Platform</h1>
-            <p className="mt-3 text-lg text-primary-foreground/80">Planning, Research & Statistics Unit</p>
+            <h1 className="text-3xl font-bold tracking-tight">PR&S Department Platform</h1>
+            <p className="mt-3 text-lg text-primary-foreground/80">Planning, Research & Statistics Department</p>
             <p className="mt-1 text-sm text-primary-foreground/60">Ondo State Contributory Health Commission</p>
           </div>
           <div className="mt-8 grid grid-cols-3 gap-6 text-center">
