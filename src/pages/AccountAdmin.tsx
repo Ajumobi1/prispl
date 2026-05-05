@@ -146,7 +146,7 @@ export default function AccountAdminPage() {
           <nav className="flex flex-wrap items-center gap-2 overflow-x-auto -mx-1 px-1 sm:overflow-visible">
             <Button variant="ghost" size="sm" asChild><Link to="/dashboard">Dashboard</Link></Button>
             <Button variant="ghost" size="sm" asChild><Link to="/task-tracker">Task Tracker</Link></Button>
-            <Button variant="outline" size="sm" onClick={signOut}>Logout</Button>
+            <UserMenu />
           </nav>
         </div>
       </header>
