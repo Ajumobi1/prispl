@@ -159,8 +159,6 @@ export default function DashboardPage() {
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild><Link to="/task-tracker"><ListChecks className="mr-2 h-4 w-4" />Unit Tracker</Link></DropdownMenuItem>
               {isAdmin && <DropdownMenuItem asChild><Link to="/account-admin"><Users className="mr-2 h-4 w-4" />Manage Accounts</Link></DropdownMenuItem>}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive"><LogOut className="mr-2 h-4 w-4" />Logout</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
