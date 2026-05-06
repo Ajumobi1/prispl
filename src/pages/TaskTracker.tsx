@@ -431,8 +431,6 @@ export default function TaskTrackerPage() {
               <DropdownMenuItem onClick={() => setViewMode("kanban")}><Columns3 className="mr-2 h-4 w-4" />Kanban view</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </header>
 
