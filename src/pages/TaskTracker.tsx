@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Download, Menu, LayoutDashboard, Table as TableIcon, Columns3 } from "lucide-react";
+import { Menu, LayoutDashboard, Table as TableIcon, Columns3 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
