@@ -429,11 +429,8 @@ export default function TaskTrackerPage() {
               <DropdownMenuItem asChild><Link to="/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" />Dashboard</Link></DropdownMenuItem>
               <DropdownMenuItem onClick={() => setViewMode("table")}><TableIcon className="mr-2 h-4 w-4" />Table view</DropdownMenuItem>
               <DropdownMenuItem onClick={() => setViewMode("kanban")}><Columns3 className="mr-2 h-4 w-4" />Kanban view</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Export {formatMonthLabel(selectedMonth)}</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => onExportMonth("csv")} disabled={isBusy}><Download className="mr-2 h-4 w-4" />CSV (.csv)</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onExportMonth("xlsx")} disabled={isBusy}><Download className="mr-2 h-4 w-4" />Excel (.xlsx)</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onExportMonth("pdf")} disabled={isBusy}><Download className="mr-2 h-4 w-4" />PDF (.pdf)</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
