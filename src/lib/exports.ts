@@ -50,10 +50,12 @@ function safeSheetName(name: string): string {
   return name.replace(/[\\/?*[\]:]/g, "_").slice(0, 31);
 }
 
-export async function downloadTasks(format: "csv" | "xlsx" | "pdf"): Promise<void> {
-  const tasks = await fetchTasks();
+export async function downloadTasks(format: "csv" | "xlsx" | "pdf", month?: string): Promise<void> {
+  const allTasks = await fetchTasks();
+  const tasks = month ? allTasks.filter((t) => t.dateAssigned.startsWith(month)) : allTasks;
   const today = new Date().toISOString().slice(0, 10);
-  const filename = `prs-task-tracker-${today}`;
+  const suffix = month ? `-${month}` : "";
+  const filename = `prs-task-tracker${suffix}-${today}`;
   const groups = groupByMonth(tasks);
 
   if (format === "csv") {
