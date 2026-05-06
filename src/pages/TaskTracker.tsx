@@ -280,11 +280,11 @@ export default function TaskTrackerPage() {
     }
   };
 
-  const onDownloadEverything = async () => {
+  const onExportMonth = async (fmt: "csv" | "xlsx" | "pdf") => {
     try {
       setIsBusy(true);
       setError(null);
-      await downloadTasks("csv");
+      await downloadTasks(fmt, selectedMonth);
     } catch {
       setError("Download failed.");
     } finally {
