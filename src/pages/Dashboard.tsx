@@ -177,9 +177,10 @@ export default function DashboardPage() {
           </Select>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
           {[
             { label: "Total", value: byStatus.total },
+            { label: "Not Started", value: byStatus.notStarted },
             { label: "In Progress", value: byStatus.inProgress },
             { label: "Awaiting Review", value: byStatus.awaitingReview },
             { label: "Completed", value: byStatus.completed },
