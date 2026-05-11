@@ -206,19 +206,6 @@ export async function fetchTaskAttachments(taskId: string): Promise<TaskAttachme
   }));
 }
 
-export async function getAttachmentUrl(filePath: string): Promise<string> {
-  const { data, error } = await supabase.storage
-    .from("task-attachments")
-    .createSignedUrl(filePath, 3600);
-
-  if (error) {
-    console.error("Failed to create signed URL:", error.message);
-    throw new Error(`Failed to get download URL: ${error.message}`);
-  }
-
-  return data?.signedUrl ?? "#";
-}
-
 export async function downloadAttachment(filePath: string, fileName: string): Promise<void> {
   const { data, error } = await supabase.storage
     .from("task-attachments")
