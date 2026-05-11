@@ -49,7 +49,7 @@ import {
   updateTask,
   uploadTaskAttachments,
 } from "@/lib/api";
-import { getCurrentSession } from "@/lib/authApi";
+
 import { PRSTask, TaskPriority, TaskStatus, statusColumns, UnitName } from "@/lib/task-types";
 
 const priorities: TaskPriority[] = ["Urgent/High", "Medium", "Low"];
