@@ -95,14 +95,19 @@ export default function DashboardPage() {
     [tasks, selectedMonth]
   );
 
-  const byStatus = useMemo(() => ({
-    total: visibleTasks.length,
-    notStarted: visibleTasks.filter((t) => t.status === "Not Started").length,
-    inProgress: visibleTasks.filter((t) => t.status === "In Progress").length,
-    awaitingReview: visibleTasks.filter((t) => t.status === "Awaiting Review").length,
-    completed: visibleTasks.filter((t) => t.status === "Completed").length,
-    delayed: visibleTasks.filter((t) => t.status === "Delayed").length,
-  }), [visibleTasks]);
+  const byStatus = useMemo(() => {
+    const acc = { total: visibleTasks.length, notStarted: 0, inProgress: 0, awaitingReview: 0, completed: 0, delayed: 0 };
+    for (const t of visibleTasks) {
+      switch (t.status) {
+        case "Not Started": acc.notStarted++; break;
+        case "In Progress": acc.inProgress++; break;
+        case "Awaiting Review": acc.awaitingReview++; break;
+        case "Completed": acc.completed++; break;
+        case "Delayed": acc.delayed++; break;
+      }
+    }
+    return acc;
+  }, [visibleTasks]);
 
   const byUnit = useMemo(() => {
     const units: UnitName[] = ["Planning", "Research", "Statistics", "M&E"];
