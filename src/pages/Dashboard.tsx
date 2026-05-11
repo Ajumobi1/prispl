@@ -98,6 +98,7 @@ export default function DashboardPage() {
 
   const byStatus = useMemo(() => ({
     total: visibleTasks.length,
+    notStarted: visibleTasks.filter((t) => t.status === "Not Started").length,
     inProgress: visibleTasks.filter((t) => t.status === "In Progress").length,
     awaitingReview: visibleTasks.filter((t) => t.status === "Awaiting Review").length,
     completed: visibleTasks.filter((t) => t.status === "Completed").length,
