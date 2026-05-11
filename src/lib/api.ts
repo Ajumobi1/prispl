@@ -70,11 +70,22 @@ async function getUploaderName(userId: string | undefined): Promise<string> {
   return data?.full_name || data?.username || "Unknown";
 }
 
-function fireTelegramBackup(payload: Record<string, unknown>): void {
-  // Fire-and-forget so Telegram delivery never blocks user actions.
-  supabase.functions.invoke("telegram-backup", { body: payload }).catch((err) => {
-    console.warn("Telegram backup failed:", err);
-  });
+function fireTelegramBackup(
+  payload: Record<string, unknown>,
+  userId?: string,
+): void {
+  // Fire-and-forget so Telegram delivery (and the uploader-name lookup it needs)
+  // never blocks the user's create/upload response.
+  (async () => {
+    try {
+      const uploader = await getUploaderName(userId);
+      await supabase.functions.invoke("telegram-backup", {
+        body: { ...payload, uploader },
+      });
+    } catch (err) {
+      console.warn("Telegram backup failed:", err);
+    }
+  })();
 }
 
 export async function createTask(payload: CreateTaskPayload): Promise<PRSTask> {
