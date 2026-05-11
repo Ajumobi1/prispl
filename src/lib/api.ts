@@ -112,8 +112,7 @@ export async function createTask(payload: CreateTaskPayload): Promise<PRSTask> {
 
   if (error) throw new Error(error.message);
   const task = rowToTask(data);
-  const uploader = await getUploaderName(session?.user?.id);
-  fireTelegramBackup({ type: "task", task, uploader });
+  fireTelegramBackup({ type: "task", task }, session?.user?.id);
   return task;
 }
 
