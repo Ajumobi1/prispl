@@ -27,7 +27,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getCurrentSession } from "@/lib/authApi";
+import { useAuth } from "@/context/AuthContext";
 import { fetchTasks } from "@/lib/api";
 import { PRSTask, TaskStatus, UnitName } from "@/lib/task-types";
 import ondoLogo from "@/assets/ondo-state-logo.png";
