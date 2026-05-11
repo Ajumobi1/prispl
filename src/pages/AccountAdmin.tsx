@@ -22,8 +22,6 @@ import {
   AccountStatus,
   AccountUser,
   fetchAdminUsers,
-  getCurrentSession,
-  
   updateAdminUserStatus,
 } from "@/lib/authApi";
 import { supabase } from "@/integrations/supabase/client";
