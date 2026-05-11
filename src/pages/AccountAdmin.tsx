@@ -48,18 +48,9 @@ export default function AccountAdminPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const session = await getCurrentSession();
-        if (!session) {
-          navigate("/login?next=/account-admin", { replace: true });
-          return;
-        }
-        if (session.role !== "admin") {
-          navigate("/task-tracker", { replace: true });
-          return;
-        }
-        setSessionChecked(true);
         const fetched = await fetchAdminUsers();
         setUsers(fetched);
+        setSessionChecked(true);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to load users.";
         setError(message);
