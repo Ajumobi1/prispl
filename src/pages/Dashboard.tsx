@@ -51,22 +51,20 @@ function formatMonthLabel(month: string) {
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { session } = useAuth();
   const [sessionChecked, setSessionChecked] = useState(false);
   const [tasks, setTasks] = useState<PRSTask[]>([]);
   const [selectedMonth, setSelectedMonth] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const isAdmin = session?.role === "admin";
 
   useEffect(() => {
+    let cancelled = false;
     const load = async () => {
       try {
-        const session = await getCurrentSession();
-        if (!session) {
-          navigate("/login?next=/dashboard", { replace: true });
-          return;
-        }
         setError(null);
         const data = await fetchTasks();
+        if (cancelled) return;
         setTasks(data);
         if (data.length > 0) {
           const months = Array.from(new Set(data.map((t) => t.dateAssigned.slice(0, 7)))).sort((a, b) => b.localeCompare(a));
@@ -74,16 +72,17 @@ export default function DashboardPage() {
         } else {
           setSelectedMonth((prev) => prev || new Date().toISOString().slice(0, 7));
         }
-        setIsAdmin(session?.role === "admin");
       } catch (err) {
+        if (cancelled) return;
         const message = err instanceof Error ? err.message : "Failed to load dashboard data.";
         setError(message);
       } finally {
-        setSessionChecked(true);
+        if (!cancelled) setSessionChecked(true);
       }
     };
     load();
-  }, [navigate]);
+    return () => { cancelled = true; };
+  }, []);
 
   const availableMonths = useMemo(() => {
     const months = Array.from(new Set(tasks.map((t) => t.dateAssigned.slice(0, 7)).filter(Boolean)));
