@@ -144,8 +144,8 @@ export async function updateTask(taskId: string, payload: CreateTaskPayload): Pr
 
 export async function uploadTaskAttachments(taskId: string, files: File[]): Promise<TaskAttachment[]> {
   const { data: { session } } = await supabase.auth.getSession();
+  const uploaderId = session?.user?.id;
   const results: TaskAttachment[] = [];
-  const uploader = await getUploaderName(session?.user?.id);
 
   for (const file of files) {
     const filePath = `${taskId}/${Date.now()}-${file.name}`;
@@ -163,7 +163,7 @@ export async function uploadTaskAttachments(taskId: string, files: File[]): Prom
         file_path: filePath,
         content_type: file.type || "application/octet-stream",
         file_size: file.size,
-        uploaded_by: session?.user?.id ?? null,
+        uploaded_by: uploaderId ?? null,
       })
       .select()
       .single();
@@ -180,7 +180,7 @@ export async function uploadTaskAttachments(taskId: string, files: File[]): Prom
       uploadedAt: data.created_at,
     });
 
-    fireTelegramBackup({ type: "file", taskId, attachmentId: data.id, uploader });
+    fireTelegramBackup({ type: "file", taskId, attachmentId: data.id }, uploaderId);
   }
 
   return results;
