@@ -148,11 +148,6 @@ export default function TaskTrackerPage() {
 
     const loadTasks = async () => {
       try {
-        const session = await getCurrentSession();
-        if (!session) {
-          navigate("/login?next=/task-tracker", { replace: true });
-          return;
-        }
         setError(null);
         const remoteTasks = await fetchTasks();
         setTasks(remoteTasks);
