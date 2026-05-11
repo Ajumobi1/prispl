@@ -44,12 +44,12 @@ import {
   fetchTaskAttachments,
   fetchTasks,
   downloadAttachment,
-  getAttachmentUrl,
+  
   TaskAttachment,
   updateTask,
   uploadTaskAttachments,
 } from "@/lib/api";
-import { getCurrentSession } from "@/lib/authApi";
+
 import { PRSTask, TaskPriority, TaskStatus, statusColumns, UnitName } from "@/lib/task-types";
 
 const priorities: TaskPriority[] = ["Urgent/High", "Medium", "Low"];
@@ -148,11 +148,6 @@ export default function TaskTrackerPage() {
 
     const loadTasks = async () => {
       try {
-        const session = await getCurrentSession();
-        if (!session) {
-          navigate("/login?next=/task-tracker", { replace: true });
-          return;
-        }
         setError(null);
         const remoteTasks = await fetchTasks();
         setTasks(remoteTasks);

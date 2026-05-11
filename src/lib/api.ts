@@ -70,11 +70,22 @@ async function getUploaderName(userId: string | undefined): Promise<string> {
   return data?.full_name || data?.username || "Unknown";
 }
 
-function fireTelegramBackup(payload: Record<string, unknown>): void {
-  // Fire-and-forget so Telegram delivery never blocks user actions.
-  supabase.functions.invoke("telegram-backup", { body: payload }).catch((err) => {
-    console.warn("Telegram backup failed:", err);
-  });
+function fireTelegramBackup(
+  payload: Record<string, unknown>,
+  userId?: string,
+): void {
+  // Fire-and-forget so Telegram delivery (and the uploader-name lookup it needs)
+  // never blocks the user's create/upload response.
+  (async () => {
+    try {
+      const uploader = await getUploaderName(userId);
+      await supabase.functions.invoke("telegram-backup", {
+        body: { ...payload, uploader },
+      });
+    } catch (err) {
+      console.warn("Telegram backup failed:", err);
+    }
+  })();
 }
 
 export async function createTask(payload: CreateTaskPayload): Promise<PRSTask> {
@@ -101,8 +112,7 @@ export async function createTask(payload: CreateTaskPayload): Promise<PRSTask> {
 
   if (error) throw new Error(error.message);
   const task = rowToTask(data);
-  const uploader = await getUploaderName(session?.user?.id);
-  fireTelegramBackup({ type: "task", task, uploader });
+  fireTelegramBackup({ type: "task", task }, session?.user?.id);
   return task;
 }
 
@@ -134,8 +144,8 @@ export async function updateTask(taskId: string, payload: CreateTaskPayload): Pr
 
 export async function uploadTaskAttachments(taskId: string, files: File[]): Promise<TaskAttachment[]> {
   const { data: { session } } = await supabase.auth.getSession();
+  const uploaderId = session?.user?.id;
   const results: TaskAttachment[] = [];
-  const uploader = await getUploaderName(session?.user?.id);
 
   for (const file of files) {
     const filePath = `${taskId}/${Date.now()}-${file.name}`;
@@ -153,7 +163,7 @@ export async function uploadTaskAttachments(taskId: string, files: File[]): Prom
         file_path: filePath,
         content_type: file.type || "application/octet-stream",
         file_size: file.size,
-        uploaded_by: session?.user?.id ?? null,
+        uploaded_by: uploaderId ?? null,
       })
       .select()
       .single();
@@ -170,7 +180,7 @@ export async function uploadTaskAttachments(taskId: string, files: File[]): Prom
       uploadedAt: data.created_at,
     });
 
-    fireTelegramBackup({ type: "file", taskId, attachmentId: data.id, uploader });
+    fireTelegramBackup({ type: "file", taskId, attachmentId: data.id }, uploaderId);
   }
 
   return results;
@@ -194,19 +204,6 @@ export async function fetchTaskAttachments(taskId: string): Promise<TaskAttachme
     fileSize: Number(a.file_size),
     uploadedAt: a.created_at,
   }));
-}
-
-export async function getAttachmentUrl(filePath: string): Promise<string> {
-  const { data, error } = await supabase.storage
-    .from("task-attachments")
-    .createSignedUrl(filePath, 3600);
-
-  if (error) {
-    console.error("Failed to create signed URL:", error.message);
-    throw new Error(`Failed to get download URL: ${error.message}`);
-  }
-
-  return data?.signedUrl ?? "#";
 }
 
 export async function downloadAttachment(filePath: string, fileName: string): Promise<void> {
