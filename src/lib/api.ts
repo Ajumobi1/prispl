@@ -116,7 +116,7 @@ export async function createTask(payload: CreateTaskPayload): Promise<PRSTask> {
 
   if (error) throw new Error(error.message);
   const task = rowToTask(data);
-  fireTelegramBackup({ type: "task", task }, session?.user?.id);
+  fireTelegramBackup({ type: "task", task }, session?.user?.id, session?.access_token);
   return task;
 }
 
@@ -184,7 +184,7 @@ export async function uploadTaskAttachments(taskId: string, files: File[]): Prom
       uploadedAt: data.created_at,
     });
 
-    fireTelegramBackup({ type: "file", taskId, attachmentId: data.id }, uploaderId);
+    fireTelegramBackup({ type: "file", taskId, attachmentId: data.id }, uploaderId, session?.access_token);
   }
 
   return results;
