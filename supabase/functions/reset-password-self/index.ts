@@ -1,17 +1,16 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.0";
+import { hashAnswer, verifyAnswer, isLegacyHash } from "../_shared/passwordHash.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-async function sha256Hex(input: string): Promise<string> {
-  const data = new TextEncoder().encode(input);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
+const GENERIC_INVALID = JSON.stringify({
+  error: "Username or security answer is incorrect.",
+});
+
+const MIN_PASSWORD = 8;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -21,8 +20,14 @@ Deno.serve(async (req) => {
   try {
     const { username, securityAnswer, newPassword } = await req.json();
 
-    if (!username || !securityAnswer || !newPassword || newPassword.length < 4) {
-      return new Response(JSON.stringify({ error: "All fields required. Password must be at least 4 characters." }), {
+    if (!username || !securityAnswer || !newPassword) {
+      return new Response(JSON.stringify({ error: `All fields required. Password must be at least ${MIN_PASSWORD} characters.` }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (typeof newPassword !== "string" || newPassword.length < MIN_PASSWORD) {
+      return new Response(JSON.stringify({ error: `Password must be at least ${MIN_PASSWORD} characters.` }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -34,30 +39,23 @@ Deno.serve(async (req) => {
 
     const normalizedUsername = username.trim().toLowerCase();
 
-    const { data: profile, error: profileError } = await adminClient
+    const { data: profile } = await adminClient
       .from("profiles")
-      .select("user_id, security_question, security_answer")
+      .select("user_id, security_answer")
       .eq("username", normalizedUsername)
-      .single();
+      .maybeSingle();
 
-    if (profileError || !profile) {
-      return new Response(JSON.stringify({ error: "Username not found." }), {
-        status: 404,
+    // Generic response for both "no such user" and "no question set"
+    if (!profile || !profile.security_answer) {
+      return new Response(GENERIC_INVALID, {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (!profile.security_answer) {
-      return new Response(JSON.stringify({ error: "No security question set for this account. Contact an admin." }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Compare hashed answer
-    const hashedInput = await sha256Hex(securityAnswer.toLowerCase().trim());
-    if (profile.security_answer !== hashedInput) {
-      return new Response(JSON.stringify({ error: "Incorrect security answer." }), {
+    const ok = await verifyAnswer(securityAnswer, profile.security_answer);
+    if (!ok) {
+      return new Response(GENERIC_INVALID, {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -72,11 +70,25 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Hash-upgrade: if the stored answer used the legacy fast SHA-256 hash,
+    // re-hash with the modern KDF now that we know the plaintext is correct.
+    if (isLegacyHash(profile.security_answer)) {
+      try {
+        const upgraded = await hashAnswer(securityAnswer);
+        await adminClient
+          .from("profiles")
+          .update({ security_answer: upgraded })
+          .eq("user_id", profile.user_id);
+      } catch (_e) {
+        // Non-fatal; reset already succeeded.
+      }
+    }
+
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

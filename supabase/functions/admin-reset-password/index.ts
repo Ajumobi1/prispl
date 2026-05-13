@@ -5,6 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const MIN_PASSWORD = 8;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -19,7 +21,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify the caller is an admin
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -36,7 +37,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check admin role
     const { data: roleData } = await callerClient.from("user_roles").select("role").eq("user_id", caller.id);
     const isAdmin = roleData?.some((r: any) => r.role === "admin");
     if (!isAdmin) {
@@ -47,14 +47,13 @@ Deno.serve(async (req) => {
     }
 
     const { userId, newPassword } = await req.json();
-    if (!userId || !newPassword || newPassword.length < 4) {
-      return new Response(JSON.stringify({ error: "userId and newPassword (min 4 chars) required" }), {
+    if (!userId || !newPassword || typeof newPassword !== "string" || newPassword.length < MIN_PASSWORD) {
+      return new Response(JSON.stringify({ error: `userId and newPassword (min ${MIN_PASSWORD} chars) required` }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Use service role to update the user's password
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const { error } = await adminClient.auth.admin.updateUserById(userId, { password: newPassword });
 
@@ -69,7 +68,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

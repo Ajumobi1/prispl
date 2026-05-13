@@ -111,8 +111,44 @@ Deno.serve(async (req) => {
       throw new Error("TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured");
     }
 
+    // Require an authenticated, approved caller. This endpoint can dump tasks
+    // and download arbitrary attachments via the service-role key, so it must
+    // never be callable anonymously.
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const callerClient = createClient(SUPABASE_URL, ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await callerClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Unauthorized." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const body = await req.json();
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+
+    // Approval check (uses service-role to bypass RLS on profiles).
+    const { data: callerProfile } = await supabase
+      .from("profiles")
+      .select("status")
+      .eq("user_id", claimsData.claims.sub as string)
+      .maybeSingle();
+    if (!callerProfile || callerProfile.status !== "approved") {
+      return new Response(JSON.stringify({ error: "Forbidden." }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const nowStr = new Date().toLocaleString("en-GB", { timeZone: "Africa/Lagos" });
 
     if (body.type === "task") {

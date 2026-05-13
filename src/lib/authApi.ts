@@ -117,6 +117,9 @@ export async function registerAccount(payload: {
   if (!normalizedUsername || !payload.password.trim()) {
     throw new Error("Username and password are required.");
   }
+  if (payload.password.length < 8) {
+    throw new Error("Password must be at least 8 characters.");
+  }
   if (!/^[a-z0-9._-]{3,32}$/.test(normalizedUsername)) {
     throw new Error("Username must be 3-32 characters and can only contain letters, numbers, dots, underscores, or hyphens (no spaces).");
   }
