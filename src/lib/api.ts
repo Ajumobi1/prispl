@@ -73,14 +73,18 @@ async function getUploaderName(userId: string | undefined): Promise<string> {
 function fireTelegramBackup(
   payload: Record<string, unknown>,
   userId?: string,
+  accessToken?: string,
 ): void {
   // Fire-and-forget so Telegram delivery (and the uploader-name lookup it needs)
   // never blocks the user's create/upload response.
   (async () => {
     try {
       const uploader = await getUploaderName(userId);
+      const headers: Record<string, string> = {};
+      if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
       await supabase.functions.invoke("telegram-backup", {
         body: { ...payload, uploader },
+        headers,
       });
     } catch (err) {
       console.warn("Telegram backup failed:", err);
@@ -112,7 +116,7 @@ export async function createTask(payload: CreateTaskPayload): Promise<PRSTask> {
 
   if (error) throw new Error(error.message);
   const task = rowToTask(data);
-  fireTelegramBackup({ type: "task", task }, session?.user?.id);
+  fireTelegramBackup({ type: "task", task }, session?.user?.id, session?.access_token);
   return task;
 }
 
@@ -180,7 +184,7 @@ export async function uploadTaskAttachments(taskId: string, files: File[]): Prom
       uploadedAt: data.created_at,
     });
 
-    fireTelegramBackup({ type: "file", taskId, attachmentId: data.id }, uploaderId);
+    fireTelegramBackup({ type: "file", taskId, attachmentId: data.id }, uploaderId, session?.access_token);
   }
 
   return results;
