@@ -1,7 +1,7 @@
 project_id = "cbuulmpemweaaymwdqfp"
 
 [functions.set-security-answer]
-verify_jwt = false
+verify_jwt = true
 
 [functions.telegram-backup]
-verify_jwt = false
+verify_jwt = true
