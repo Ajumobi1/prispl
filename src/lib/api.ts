@@ -73,14 +73,18 @@ async function getUploaderName(userId: string | undefined): Promise<string> {
 function fireTelegramBackup(
   payload: Record<string, unknown>,
   userId?: string,
+  accessToken?: string,
 ): void {
   // Fire-and-forget so Telegram delivery (and the uploader-name lookup it needs)
   // never blocks the user's create/upload response.
   (async () => {
     try {
       const uploader = await getUploaderName(userId);
+      const headers: Record<string, string> = {};
+      if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
       await supabase.functions.invoke("telegram-backup", {
         body: { ...payload, uploader },
+        headers,
       });
     } catch (err) {
       console.warn("Telegram backup failed:", err);
