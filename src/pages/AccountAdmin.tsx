@@ -84,8 +84,8 @@ export default function AccountAdminPage() {
 
   const handleResetPassword = async () => {
     setResetError(null);
-    if (resetPassword.length < 4) {
-      setResetError("Password must be at least 4 characters.");
+    if (resetPassword.length < 8) {
+      setResetError("Password must be at least 8 characters.");
       return;
     }
     if (resetPassword !== resetConfirm) {
