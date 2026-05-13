@@ -125,9 +125,8 @@ Deno.serve(async (req) => {
     const callerClient = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await callerClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims?.sub) {
+    const { data: { user: caller }, error: callerErr } = await callerClient.auth.getUser();
+    if (callerErr || !caller) {
       return new Response(JSON.stringify({ error: "Unauthorized." }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -141,7 +140,7 @@ Deno.serve(async (req) => {
     const { data: callerProfile } = await supabase
       .from("profiles")
       .select("status")
-      .eq("user_id", claimsData.claims.sub as string)
+      .eq("user_id", caller.id)
       .maybeSingle();
     if (!callerProfile || callerProfile.status !== "approved") {
       return new Response(JSON.stringify({ error: "Forbidden." }), {
