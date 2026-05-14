@@ -377,6 +377,7 @@ export default function TaskTrackerPage() {
       const uploaded = await uploadTaskAttachments(task.id, queued);
       setTaskUploads((prev) => ({ ...prev, [taskKey]: [...uploaded, ...(prev[taskKey] ?? [])] }));
       setUploadQueueByTask((prev) => ({ ...prev, [taskKey]: [] }));
+      toast.success("Attachments uploaded successfully");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to upload task attachments.";
       setError(message);
