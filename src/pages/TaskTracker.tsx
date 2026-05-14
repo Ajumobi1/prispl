@@ -338,6 +338,7 @@ export default function TaskTrackerPage() {
       setTasks((prev) => prev.map((item) => (getTaskKey(item) === getTaskKey(task) ? updated : item)));
       setEditingTaskId(null);
       setEditDraft(null);
+      toast.success("Task updated successfully");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update task.";
       setError(message);
