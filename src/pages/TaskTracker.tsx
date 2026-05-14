@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Menu, LayoutDashboard, Table as TableIcon, Columns3 } from "lucide-react";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -251,6 +252,7 @@ export default function TaskTrackerPage() {
         remarks: form.remarks,
       });
       setTasks((prev) => [...prev, createdTask]);
+      toast.success("Task created successfully");
 
       if (uploadQueue.length > 0 && createdTask.id) {
         const uploadedAttachments = await uploadTaskAttachments(createdTask.id, uploadQueue);
@@ -336,6 +338,7 @@ export default function TaskTrackerPage() {
       setTasks((prev) => prev.map((item) => (getTaskKey(item) === getTaskKey(task) ? updated : item)));
       setEditingTaskId(null);
       setEditDraft(null);
+      toast.success("Task updated successfully");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update task.";
       setError(message);
@@ -355,6 +358,7 @@ export default function TaskTrackerPage() {
         ...prev,
         [getTaskKey(task)]: (prev[getTaskKey(task)] ?? []).filter((i) => i.id !== attachment.id),
       }));
+      toast.success("Attachment deleted");
     } catch {
       setError("Failed to delete attachment.");
     } finally {
@@ -373,6 +377,7 @@ export default function TaskTrackerPage() {
       const uploaded = await uploadTaskAttachments(task.id, queued);
       setTaskUploads((prev) => ({ ...prev, [taskKey]: [...uploaded, ...(prev[taskKey] ?? [])] }));
       setUploadQueueByTask((prev) => ({ ...prev, [taskKey]: [] }));
+      toast.success("Attachments uploaded successfully");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to upload task attachments.";
       setError(message);
