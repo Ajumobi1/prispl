@@ -37,6 +37,17 @@ export default function AccountAdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [busyUserId, setBusyUserId] = useState<string | null>(null);
 
+  // Telegram backup health check
+  const [healthChecking, setHealthChecking] = useState(false);
+  const [healthResult, setHealthResult] = useState<
+    | null
+    | {
+        ok: boolean;
+        message: string;
+        detail?: Record<string, unknown>;
+      }
+  >(null);
+
   // Password reset dialog state
   const [resetUser, setResetUser] = useState<AccountUser | null>(null);
   const [resetPassword, setResetPassword] = useState("");
@@ -44,6 +55,34 @@ export default function AccountAdminPage() {
   const [resetError, setResetError] = useState<string | null>(null);
   const [resetSuccess, setResetSuccess] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+
+  const runTelegramHealthCheck = async () => {
+    setHealthChecking(true);
+    setHealthResult(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = {};
+      if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+      const { data, error: fnError } = await supabase.functions.invoke("telegram-backup", {
+        body: { type: "healthcheck", uploader: session?.user?.email ?? "Admin" },
+        headers,
+      });
+      if (fnError) throw new Error(fnError.message || "Health check failed");
+      if (data?.error) throw new Error(data.error);
+      setHealthResult({
+        ok: true,
+        message: `Backup channel healthy. Round-trip ${data?.elapsedMs ?? "?"} ms. Check Telegram for the report message.`,
+        detail: data,
+      });
+    } catch (err) {
+      setHealthResult({
+        ok: false,
+        message: err instanceof Error ? err.message : "Health check failed.",
+      });
+    } finally {
+      setHealthChecking(false);
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
