@@ -37,6 +37,17 @@ export default function AccountAdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [busyUserId, setBusyUserId] = useState<string | null>(null);
 
+  // Telegram backup health check
+  const [healthChecking, setHealthChecking] = useState(false);
+  const [healthResult, setHealthResult] = useState<
+    | null
+    | {
+        ok: boolean;
+        message: string;
+        detail?: Record<string, unknown>;
+      }
+  >(null);
+
   // Password reset dialog state
   const [resetUser, setResetUser] = useState<AccountUser | null>(null);
   const [resetPassword, setResetPassword] = useState("");
@@ -44,6 +55,34 @@ export default function AccountAdminPage() {
   const [resetError, setResetError] = useState<string | null>(null);
   const [resetSuccess, setResetSuccess] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+
+  const runTelegramHealthCheck = async () => {
+    setHealthChecking(true);
+    setHealthResult(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = {};
+      if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+      const { data, error: fnError } = await supabase.functions.invoke("telegram-backup", {
+        body: { type: "healthcheck", uploader: session?.user?.email ?? "Admin" },
+        headers,
+      });
+      if (fnError) throw new Error(fnError.message || "Health check failed");
+      if (data?.error) throw new Error(data.error);
+      setHealthResult({
+        ok: true,
+        message: `Backup channel healthy. Round-trip ${data?.elapsedMs ?? "?"} ms. Check Telegram for the report message.`,
+        detail: data,
+      });
+    } catch (err) {
+      setHealthResult({
+        ok: false,
+        message: err instanceof Error ? err.message : "Health check failed.",
+      });
+    } finally {
+      setHealthChecking(false);
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -139,6 +178,38 @@ export default function AccountAdminPage() {
 
       <main className="mx-auto max-w-6xl space-y-6 p-3 sm:p-4">
         {error && <p className="text-sm text-destructive">{error}</p>}
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Telegram Backup Health Check</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Verifies that the backup channel is reachable, the database is queryable, and that the latest uploaded
+              attachment can still be downloaded from storage. A summary message is sent to the Telegram backup chat.
+            </p>
+            <Button onClick={runTelegramHealthCheck} disabled={healthChecking}>
+              {healthChecking ? "Running check..." : "Run health check"}
+            </Button>
+            {healthResult && (
+              <div
+                className={`rounded-md border p-3 text-sm ${
+                  healthResult.ok
+                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                    : "border-destructive/40 bg-destructive/10 text-destructive"
+                }`}
+              >
+                <p className="font-medium">{healthResult.ok ? "Healthy" : "Failed"}</p>
+                <p>{healthResult.message}</p>
+                {healthResult.detail && (
+                  <pre className="mt-2 overflow-x-auto whitespace-pre-wrap text-xs opacity-80">
+                    {JSON.stringify(healthResult.detail, null, 2)}
+                  </pre>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {isLoading ? (
           <p className="text-center text-muted-foreground">Loading users...</p>
