@@ -249,6 +249,86 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (body.type === "healthcheck") {
+      const startedAt = Date.now();
+      const requester = body.uploader ?? caller.email ?? "Unknown";
+
+      // Counts + latest task
+      const { count: taskCount } = await supabase
+        .from("tasks")
+        .select("*", { count: "exact", head: true });
+      const { data: latestTask } = await supabase
+        .from("tasks")
+        .select("serial_number, task_title, unit, assignee, created_at")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // Counts + latest attachment
+      const { count: attCount } = await supabase
+        .from("task_attachments")
+        .select("*", { count: "exact", head: true });
+      const { data: latestAtt } = await supabase
+        .from("task_attachments")
+        .select("file_name, file_size, content_type, created_at, task_id")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // Verify storage download still works for the latest attachment
+      let storageOk = true;
+      let storageError: string | null = null;
+      if (latestAtt) {
+        const { data: blob, error: dlErr } = await supabase.storage
+          .from("task-attachments")
+          .download(
+            (await supabase
+              .from("task_attachments")
+              .select("file_path")
+              .eq("file_name", latestAtt.file_name)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle()).data?.file_path ?? "",
+          );
+        if (dlErr || !blob) {
+          storageOk = false;
+          storageError = dlErr?.message ?? "no blob";
+        }
+      }
+
+      const elapsedMs = Date.now() - startedAt;
+      const msg =
+        `🩺 <b>Telegram Backup Health Check</b>\n` +
+        `<b>By:</b> ${requester}\n` +
+        `<b>When:</b> ${nowStr}\n` +
+        `<b>Tasks in DB:</b> ${taskCount ?? 0}\n` +
+        `<b>Attachments in DB:</b> ${attCount ?? 0}\n` +
+        (latestTask
+          ? `<b>Latest task:</b> #${latestTask.serial_number} — ${latestTask.task_title} (${latestTask.unit})\n`
+          : `<b>Latest task:</b> none\n`) +
+        (latestAtt
+          ? `<b>Latest file:</b> ${latestAtt.file_name} (${Math.round(Number(latestAtt.file_size) / 1024)} KB)\n`
+          : `<b>Latest file:</b> none\n`) +
+        `<b>Storage download:</b> ${storageOk ? "OK" : `FAIL (${storageError})`}\n` +
+        `<b>Round-trip:</b> ${elapsedMs} ms`;
+      await sendMessage(msg);
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          taskCount: taskCount ?? 0,
+          attachmentCount: attCount ?? 0,
+          latestTask,
+          latestAttachment: latestAtt,
+          storageOk,
+          storageError,
+          elapsedMs,
+          deliveredAt: nowStr,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     return new Response(JSON.stringify({ error: "Unknown type" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
