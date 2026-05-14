@@ -358,6 +358,7 @@ export default function TaskTrackerPage() {
         ...prev,
         [getTaskKey(task)]: (prev[getTaskKey(task)] ?? []).filter((i) => i.id !== attachment.id),
       }));
+      toast.success("Attachment deleted");
     } catch {
       setError("Failed to delete attachment.");
     } finally {
