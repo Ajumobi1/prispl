@@ -252,6 +252,7 @@ export default function TaskTrackerPage() {
         remarks: form.remarks,
       });
       setTasks((prev) => [...prev, createdTask]);
+      toast.success("Task created successfully");
 
       if (uploadQueue.length > 0 && createdTask.id) {
         const uploadedAttachments = await uploadTaskAttachments(createdTask.id, uploadQueue);
