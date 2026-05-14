@@ -179,6 +179,38 @@ export default function AccountAdminPage() {
       <main className="mx-auto max-w-6xl space-y-6 p-3 sm:p-4">
         {error && <p className="text-sm text-destructive">{error}</p>}
 
+        <Card>
+          <CardHeader>
+            <CardTitle>Telegram Backup Health Check</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Verifies that the backup channel is reachable, the database is queryable, and that the latest uploaded
+              attachment can still be downloaded from storage. A summary message is sent to the Telegram backup chat.
+            </p>
+            <Button onClick={runTelegramHealthCheck} disabled={healthChecking}>
+              {healthChecking ? "Running check..." : "Run health check"}
+            </Button>
+            {healthResult && (
+              <div
+                className={`rounded-md border p-3 text-sm ${
+                  healthResult.ok
+                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                    : "border-destructive/40 bg-destructive/10 text-destructive"
+                }`}
+              >
+                <p className="font-medium">{healthResult.ok ? "Healthy" : "Failed"}</p>
+                <p>{healthResult.message}</p>
+                {healthResult.detail && (
+                  <pre className="mt-2 overflow-x-auto whitespace-pre-wrap text-xs opacity-80">
+                    {JSON.stringify(healthResult.detail, null, 2)}
+                  </pre>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {isLoading ? (
           <p className="text-center text-muted-foreground">Loading users...</p>
         ) : (
