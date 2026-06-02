@@ -200,7 +200,7 @@ export default function Profile() {
                   autoComplete="new-password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  minLength={6}
+                  minLength={8}
                   required
                 />
               </div>
