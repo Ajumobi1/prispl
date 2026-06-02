@@ -385,6 +385,7 @@ export default function TaskTrackerPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to upload task attachments.";
       setError(message);
+      toast.error(message);
     } finally {
       setUploadingTaskId(null);
     }
