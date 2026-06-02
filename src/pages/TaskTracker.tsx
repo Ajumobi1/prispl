@@ -272,6 +272,7 @@ export default function TaskTrackerPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create task.";
       setError(message);
+      toast.error(message);
     } finally {
       setIsBusy(false);
     }
@@ -342,6 +343,7 @@ export default function TaskTrackerPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update task.";
       setError(message);
+      toast.error(message);
     } finally {
       setIsBusy(false);
     }
@@ -360,7 +362,9 @@ export default function TaskTrackerPage() {
       }));
       toast.success("Attachment deleted");
     } catch {
-      setError("Failed to delete attachment.");
+      const message = "Failed to delete attachment.";
+      setError(message);
+      toast.error(message);
     } finally {
       setDeletingAttachmentId(null);
     }
@@ -381,6 +385,7 @@ export default function TaskTrackerPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to upload task attachments.";
       setError(message);
+      toast.error(message);
     } finally {
       setUploadingTaskId(null);
     }
