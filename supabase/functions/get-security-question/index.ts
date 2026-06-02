@@ -7,10 +7,19 @@ const corsHeaders = {
 
 // Generic response: never reveal whether the username exists or whether
 // it has a security question configured. Account-enumeration via this
-// endpoint must be impossible.
-const GENERIC_ERROR = JSON.stringify({
-  error: "Unable to retrieve a security question for that account. Contact an admin if you cannot recover access.",
-});
+// endpoint must be impossible — same status code, same shape, same timing.
+const GENERIC_ERROR_MESSAGE =
+  "Unable to retrieve a security question for that account. Contact an admin if you cannot recover access.";
+
+// Always respond 200 so an attacker cannot distinguish existing vs missing
+// accounts from the HTTP status. The client treats `error` in the body as
+// the failure signal.
+function respond(body: Record<string, unknown>) {
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -20,10 +29,7 @@ Deno.serve(async (req) => {
   try {
     const { username } = await req.json();
     if (!username || typeof username !== "string") {
-      return new Response(GENERIC_ERROR, {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respond({ error: GENERIC_ERROR_MESSAGE });
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -37,19 +43,11 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (!profile || !profile.security_question) {
-      return new Response(GENERIC_ERROR, {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respond({ error: GENERIC_ERROR_MESSAGE });
     }
 
-    return new Response(JSON.stringify({ security_question: profile.security_question }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respond({ security_question: profile.security_question });
   } catch (_err) {
-    return new Response(GENERIC_ERROR, {
-      status: 404,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respond({ error: GENERIC_ERROR_MESSAGE });
   }
 });
