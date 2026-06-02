@@ -362,7 +362,9 @@ export default function TaskTrackerPage() {
       }));
       toast.success("Attachment deleted");
     } catch {
-      setError("Failed to delete attachment.");
+      const message = "Failed to delete attachment.";
+      setError(message);
+      toast.error(message);
     } finally {
       setDeletingAttachmentId(null);
     }
