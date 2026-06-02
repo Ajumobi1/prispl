@@ -272,6 +272,7 @@ export default function TaskTrackerPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create task.";
       setError(message);
+      toast.error(message);
     } finally {
       setIsBusy(false);
     }
