@@ -260,6 +260,81 @@ export default function AccountAdminPage() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex flex-wrap items-center justify-between gap-2">
+              <span>Backup Failures ({failures.filter((f) => !f.resolved).length} unresolved)</span>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const next = !showResolved;
+                    setShowResolved(next);
+                    loadFailures(next);
+                  }}
+                >
+                  {showResolved ? "Hide resolved" : "Show resolved"}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => loadFailures(showResolved)} disabled={failuresLoading}>
+                  {failuresLoading ? "Refreshing..." : "Refresh"}
+                </Button>
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            {failures.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No {showResolved ? "" : "unresolved "}backup failures. Telegram backups are succeeding.
+              </p>
+            ) : (
+              <Table className="min-w-[700px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>When</TableHead>
+                    <TableHead>Kind</TableHead>
+                    <TableHead>Task / Attachment</TableHead>
+                    <TableHead>Error</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {failures.map((f) => (
+                    <TableRow key={f.id}>
+                      <TableCell className="whitespace-nowrap text-xs">
+                        {new Date(f.created_at).toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-xs">{f.kind}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {f.task_id ? `task ${f.task_id.slice(0, 8)}` : "-"}
+                        {f.attachment_id ? ` / att ${f.attachment_id.slice(0, 8)}` : ""}
+                      </TableCell>
+                      <TableCell className="max-w-[280px] text-xs text-destructive">
+                        <span className="break-words">{f.message}</span>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {f.resolved ? (
+                          <span className="text-emerald-600">resolved</span>
+                        ) : (
+                          <span className="text-destructive">open</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {!f.resolved && (
+                          <Button size="sm" variant="outline" onClick={() => resolveFailure(f.id)}>
+                            Mark resolved
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
         {isLoading ? (
           <p className="text-center text-muted-foreground">Loading users...</p>
         ) : (
