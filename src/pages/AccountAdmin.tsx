@@ -67,6 +67,43 @@ export default function AccountAdminPage() {
   const [resetSuccess, setResetSuccess] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
 
+  // Backup failures
+  const [failures, setFailures] = useState<BackupFailure[]>([]);
+  const [failuresLoading, setFailuresLoading] = useState(false);
+  const [showResolved, setShowResolved] = useState(false);
+
+  const loadFailures = async (includeResolved = showResolved) => {
+    setFailuresLoading(true);
+    try {
+      let query = supabase
+        .from("backup_failures")
+        .select("id,user_id,kind,task_id,attachment_id,message,resolved,created_at")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (!includeResolved) query = query.eq("resolved", false);
+      const { data, error: fErr } = await query;
+      if (fErr) throw fErr;
+      setFailures((data ?? []) as BackupFailure[]);
+    } catch (err) {
+      console.warn("Failed to load backup failures:", err);
+    } finally {
+      setFailuresLoading(false);
+    }
+  };
+
+  const resolveFailure = async (id: string) => {
+    const { error: uErr } = await supabase
+      .from("backup_failures")
+      .update({ resolved: true, resolved_at: new Date().toISOString() })
+      .eq("id", id);
+    if (uErr) {
+      setError(uErr.message);
+      return;
+    }
+    setFailures((prev) => prev.filter((f) => showResolved || f.id !== id));
+    if (showResolved) loadFailures(true);
+  };
+
   const runTelegramHealthCheck = async () => {
     setHealthChecking(true);
     setHealthResult(null);
