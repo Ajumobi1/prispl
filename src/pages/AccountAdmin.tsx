@@ -29,6 +29,17 @@ import UserMenu from "@/components/UserMenu";
 
 const orderedStatus: AccountStatus[] = ["pending", "approved", "locked", "declined"];
 
+interface BackupFailure {
+  id: string;
+  user_id: string | null;
+  kind: string;
+  task_id: string | null;
+  attachment_id: string | null;
+  message: string;
+  resolved: boolean;
+  created_at: string;
+}
+
 export default function AccountAdminPage() {
   const navigate = useNavigate();
   const [sessionChecked, setSessionChecked] = useState(false);
