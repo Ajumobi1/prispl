@@ -146,6 +146,7 @@ export default function AccountAdminPage() {
       }
     };
     load();
+    loadFailures(false);
   }, [navigate]);
 
   const grouped = useMemo(() => {
