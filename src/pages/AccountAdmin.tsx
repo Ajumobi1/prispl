@@ -29,6 +29,17 @@ import UserMenu from "@/components/UserMenu";
 
 const orderedStatus: AccountStatus[] = ["pending", "approved", "locked", "declined"];
 
+interface BackupFailure {
+  id: string;
+  user_id: string | null;
+  kind: string;
+  task_id: string | null;
+  attachment_id: string | null;
+  message: string;
+  resolved: boolean;
+  created_at: string;
+}
+
 export default function AccountAdminPage() {
   const navigate = useNavigate();
   const [sessionChecked, setSessionChecked] = useState(false);
@@ -55,6 +66,43 @@ export default function AccountAdminPage() {
   const [resetError, setResetError] = useState<string | null>(null);
   const [resetSuccess, setResetSuccess] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+
+  // Backup failures
+  const [failures, setFailures] = useState<BackupFailure[]>([]);
+  const [failuresLoading, setFailuresLoading] = useState(false);
+  const [showResolved, setShowResolved] = useState(false);
+
+  const loadFailures = async (includeResolved = showResolved) => {
+    setFailuresLoading(true);
+    try {
+      let query = supabase
+        .from("backup_failures")
+        .select("id,user_id,kind,task_id,attachment_id,message,resolved,created_at")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (!includeResolved) query = query.eq("resolved", false);
+      const { data, error: fErr } = await query;
+      if (fErr) throw fErr;
+      setFailures((data ?? []) as BackupFailure[]);
+    } catch (err) {
+      console.warn("Failed to load backup failures:", err);
+    } finally {
+      setFailuresLoading(false);
+    }
+  };
+
+  const resolveFailure = async (id: string) => {
+    const { error: uErr } = await supabase
+      .from("backup_failures")
+      .update({ resolved: true, resolved_at: new Date().toISOString() })
+      .eq("id", id);
+    if (uErr) {
+      setError(uErr.message);
+      return;
+    }
+    setFailures((prev) => prev.filter((f) => showResolved || f.id !== id));
+    if (showResolved) loadFailures(true);
+  };
 
   const runTelegramHealthCheck = async () => {
     setHealthChecking(true);
@@ -98,6 +146,7 @@ export default function AccountAdminPage() {
       }
     };
     load();
+    loadFailures(false);
   }, [navigate]);
 
   const grouped = useMemo(() => {
@@ -207,6 +256,81 @@ export default function AccountAdminPage() {
                   </pre>
                 )}
               </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex flex-wrap items-center justify-between gap-2">
+              <span>Backup Failures ({failures.filter((f) => !f.resolved).length} unresolved)</span>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const next = !showResolved;
+                    setShowResolved(next);
+                    loadFailures(next);
+                  }}
+                >
+                  {showResolved ? "Hide resolved" : "Show resolved"}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => loadFailures(showResolved)} disabled={failuresLoading}>
+                  {failuresLoading ? "Refreshing..." : "Refresh"}
+                </Button>
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            {failures.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No {showResolved ? "" : "unresolved "}backup failures. Telegram backups are succeeding.
+              </p>
+            ) : (
+              <Table className="min-w-[700px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>When</TableHead>
+                    <TableHead>Kind</TableHead>
+                    <TableHead>Task / Attachment</TableHead>
+                    <TableHead>Error</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {failures.map((f) => (
+                    <TableRow key={f.id}>
+                      <TableCell className="whitespace-nowrap text-xs">
+                        {new Date(f.created_at).toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-xs">{f.kind}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {f.task_id ? `task ${f.task_id.slice(0, 8)}` : "-"}
+                        {f.attachment_id ? ` / att ${f.attachment_id.slice(0, 8)}` : ""}
+                      </TableCell>
+                      <TableCell className="max-w-[280px] text-xs text-destructive">
+                        <span className="break-words">{f.message}</span>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {f.resolved ? (
+                          <span className="text-emerald-600">resolved</span>
+                        ) : (
+                          <span className="text-destructive">open</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {!f.resolved && (
+                          <Button size="sm" variant="outline" onClick={() => resolveFailure(f.id)}>
+                            Mark resolved
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </CardContent>
         </Card>

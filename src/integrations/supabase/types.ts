@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      backup_failures: {
+        Row: {
+          attachment_id: string | null
+          context: Json | null
+          created_at: string
+          id: string
+          kind: string
+          message: string
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          task_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          attachment_id?: string | null
+          context?: Json | null
+          created_at?: string
+          id?: string
+          kind: string
+          message: string
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          task_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          attachment_id?: string | null
+          context?: Json | null
+          created_at?: string
+          id?: string
+          kind?: string
+          message?: string
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          task_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
