@@ -70,6 +70,26 @@ async function getUploaderName(userId: string | undefined): Promise<string> {
   return data?.full_name || data?.username || "Unknown";
 }
 
+async function logBackupFailure(
+  payload: Record<string, unknown>,
+  userId: string | undefined,
+  err: unknown,
+): Promise<void> {
+  try {
+    const message = err instanceof Error ? err.message : String(err ?? "Unknown error");
+    await supabase.from("backup_failures").insert({
+      user_id: userId ?? null,
+      kind: String(payload.type ?? "unknown"),
+      task_id: (payload.taskId as string | undefined) ?? (payload.task as { id?: string } | undefined)?.id ?? null,
+      attachment_id: (payload.attachmentId as string | undefined) ?? null,
+      message,
+      context: payload as never,
+    });
+  } catch (logErr) {
+    console.warn("Failed to record backup failure:", logErr);
+  }
+}
+
 function fireTelegramBackup(
   payload: Record<string, unknown>,
   userId?: string,
@@ -82,12 +102,14 @@ function fireTelegramBackup(
       const uploader = await getUploaderName(userId);
       const headers: Record<string, string> = {};
       if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
-      await supabase.functions.invoke("telegram-backup", {
+      const { error } = await supabase.functions.invoke("telegram-backup", {
         body: { ...payload, uploader },
         headers,
       });
+      if (error) throw error;
     } catch (err) {
       console.warn("Telegram backup failed:", err);
+      await logBackupFailure(payload, userId, err);
     }
   })();
 }
