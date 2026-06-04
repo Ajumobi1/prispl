@@ -252,15 +252,10 @@ export default function TaskTrackerPage() {
         remarks: form.remarks,
       });
       setTasks((prev) => [...prev, createdTask]);
+      setTaskUploads((prev) => ({ ...prev, [getTaskKey(createdTask)]: [] }));
       toast.success("Task created successfully");
 
-      if (uploadQueue.length > 0 && createdTask.id) {
-        const uploadedAttachments = await uploadTaskAttachments(createdTask.id, uploadQueue);
-        setTaskUploads((prev) => ({ ...prev, [getTaskKey(createdTask)]: uploadedAttachments }));
-      } else {
-        setTaskUploads((prev) => ({ ...prev, [getTaskKey(createdTask)]: [] }));
-      }
-
+      // Reset form immediately so the user sees the task land and isn't tempted to re-submit.
       setForm({
         unit: "Planning", taskTitle: "", taskDescription: "", assignee: "",
         dateAssigned: monthStartDefault, dueDate: monthStartDefault,
@@ -268,7 +263,23 @@ export default function TaskTrackerPage() {
       });
       setSelectedAssignees([]);
       setAssigneeInput("");
-      setUploadQueue([]);
+
+      // Upload attachments in a separate try so a failure here doesn't make
+      // the user think the task itself wasn't created (which led to duplicate submissions).
+      if (uploadQueue.length > 0 && createdTask.id) {
+        try {
+          const uploadedAttachments = await uploadTaskAttachments(createdTask.id, uploadQueue);
+          setTaskUploads((prev) => ({ ...prev, [getTaskKey(createdTask)]: uploadedAttachments }));
+          setUploadQueue([]);
+        } catch (uploadErr) {
+          const uploadMessage = uploadErr instanceof Error ? uploadErr.message : "Failed to upload attachments.";
+          setError(`Task was created, but attachment upload failed: ${uploadMessage}. You can retry the upload from the task row.`);
+          toast.error(`Attachment upload failed: ${uploadMessage}`);
+          // Keep uploadQueue so the user can retry without re-selecting files.
+        }
+      } else {
+        setUploadQueue([]);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create task.";
       setError(message);
