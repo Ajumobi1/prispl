@@ -9,6 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -126,6 +127,33 @@ export default function TaskAnalyticsCard() {
     return best;
   }, [chartData]);
 
+  const handleExport = () => {
+    const headers = ["Month", ...keys, "Total"];
+    const lines = [headers.join(",")];
+    for (const row of chartData) {
+      const values = headers.map((h) => {
+        const v = row[h];
+        if (v === undefined || v === null) return "";
+        const s = String(v);
+        if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+          return `"${s.replace(/"/g, '""')}"`;
+        }
+        return s;
+      });
+      lines.push(values.join(","));
+    }
+    const csv = lines.join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `task-analytics-${year}-${groupBy}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -151,6 +179,9 @@ export default function TaskAnalyticsCard() {
                 <TabsTrigger value="priority">Priority</TabsTrigger>
               </TabsList>
             </Tabs>
+            <Button size="sm" variant="outline" onClick={handleExport} disabled={loading || chartData.length === 0}>
+              Export CSV
+            </Button>
           </div>
         </CardTitle>
         <CardDescription>
