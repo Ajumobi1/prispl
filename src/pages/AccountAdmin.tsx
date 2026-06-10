@@ -229,6 +229,9 @@ export default function AccountAdminPage() {
       <main className="mx-auto max-w-6xl space-y-6 p-3 sm:p-4">
         {error && <p className="text-sm text-destructive">{error}</p>}
 
+        <TaskAnalyticsCard />
+
+
         <Card>
           <CardHeader>
             <CardTitle>Telegram Backup Health Check</CardTitle>
