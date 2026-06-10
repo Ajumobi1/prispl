@@ -26,6 +26,7 @@ import {
 } from "@/lib/authApi";
 import { supabase } from "@/integrations/supabase/client";
 import UserMenu from "@/components/UserMenu";
+import TaskAnalyticsCard from "@/components/TaskAnalyticsCard";
 
 const orderedStatus: AccountStatus[] = ["pending", "approved", "locked", "declined"];
 
