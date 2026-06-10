@@ -26,6 +26,7 @@ import {
 } from "@/lib/authApi";
 import { supabase } from "@/integrations/supabase/client";
 import UserMenu from "@/components/UserMenu";
+import TaskAnalyticsCard from "@/components/TaskAnalyticsCard";
 
 const orderedStatus: AccountStatus[] = ["pending", "approved", "locked", "declined"];
 
@@ -227,6 +228,9 @@ export default function AccountAdminPage() {
 
       <main className="mx-auto max-w-6xl space-y-6 p-3 sm:p-4">
         {error && <p className="text-sm text-destructive">{error}</p>}
+
+        <TaskAnalyticsCard />
+
 
         <Card>
           <CardHeader>
