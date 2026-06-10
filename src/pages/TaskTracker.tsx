@@ -81,6 +81,7 @@ export default function TaskTrackerPage() {
   const [closedMonths, setClosedMonths] = useState<string[]>([]);
   const [newMonthInput, setNewMonthInput] = useState(new Date().toISOString().slice(0, 7));
   const [isBusy, setIsBusy] = useState(false);
+  const submitLockRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [assigneeInput, setAssigneeInput] = useState("");
