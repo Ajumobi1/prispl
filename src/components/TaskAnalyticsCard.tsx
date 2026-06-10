@@ -36,9 +36,10 @@ const STATUS_COLORS: Record<string, string> = {
   Blocked: "hsl(var(--destructive))",
 };
 const PRIORITY_COLORS: Record<string, string> = {
-  Low: "hsl(var(--muted-foreground))",
-  Medium: "hsl(var(--primary))",
-  High: "hsl(43 74% 49%)",
+  Low: "hsl(142 71% 45%)",
+  Medium: "hsl(43 74% 49%)",
+  "Urgent/High": "hsl(var(--destructive))",
+  High: "hsl(var(--destructive))",
   Critical: "hsl(var(--destructive))",
 };
 
