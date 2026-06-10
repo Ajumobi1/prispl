@@ -220,6 +220,11 @@ export default function TaskTrackerPage() {
   };
 
   const onAddTask = async () => {
+    // Synchronous re-entrancy lock — blocks duplicate submits even if React hasn't
+    // flushed setIsBusy yet (e.g. rapid double clicks or Enter-key repeats).
+    if (submitLockRef.current || isBusy) return;
+    submitLockRef.current = true;
+
     const normalizedTaskTitle = form.taskTitle.trim();
     const monthStartDefault = `${selectedMonth}-01`;
     const resolvedDateAssigned = form.dateAssigned || monthStartDefault;
@@ -227,11 +232,13 @@ export default function TaskTrackerPage() {
 
     if (!normalizedTaskTitle || selectedAssignees.length === 0) {
       setError("Task, Assignees, Priority, and Status are required.");
+      submitLockRef.current = false;
       return;
     }
 
     if (resolvedDueDate < resolvedDateAssigned) {
       setError("End Date cannot be earlier than Start Date.");
+      submitLockRef.current = false;
       return;
     }
 
