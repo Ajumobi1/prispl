@@ -33,6 +33,7 @@ import { PRSTask, TaskStatus, UnitName } from "@/lib/task-types";
 import ondoLogo from "@/assets/ondo-state-logo.png";
 import odchcLogo from "@/assets/odchc-logo.png";
 import UserMenu from "@/components/UserMenu";
+import TaskAnalyticsCard from "@/components/TaskAnalyticsCard";
 
 const statusVariant: Record<TaskStatus, "secondary" | "default" | "destructive" | "outline"> = {
   "Not Started": "secondary",
