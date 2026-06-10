@@ -289,11 +289,15 @@ export default function TaskTrackerPage() {
         setUploadQueue([]);
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to create task.";
-      setError(message);
-      toast.error(message);
+      const raw = err instanceof Error ? err.message : "Failed to create task.";
+      const friendly = raw.includes("duplicate_task")
+        ? "This task was just created moments ago. Refresh to see it — no duplicate was saved."
+        : raw;
+      setError(friendly);
+      toast.error(friendly);
     } finally {
       setIsBusy(false);
+      submitLockRef.current = false;
     }
   };
 
