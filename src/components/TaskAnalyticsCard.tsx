@@ -179,6 +179,9 @@ export default function TaskAnalyticsCard() {
                 <TabsTrigger value="priority">Priority</TabsTrigger>
               </TabsList>
             </Tabs>
+            <Button size="sm" variant="outline" onClick={handleExport} disabled={loading || chartData.length === 0}>
+              Export CSV
+            </Button>
           </div>
         </CardTitle>
         <CardDescription>
