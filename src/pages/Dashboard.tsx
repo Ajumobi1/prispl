@@ -215,6 +215,8 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
+        <TaskAnalyticsCard />
+
         <Card className="shadow-sm">
           <CardHeader>
             <CardTitle>Task Overview</CardTitle>
