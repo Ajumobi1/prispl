@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Menu, LayoutDashboard, Table as TableIcon, Columns3 } from "lucide-react";
 import { toast } from "sonner";
@@ -81,6 +81,7 @@ export default function TaskTrackerPage() {
   const [closedMonths, setClosedMonths] = useState<string[]>([]);
   const [newMonthInput, setNewMonthInput] = useState(new Date().toISOString().slice(0, 7));
   const [isBusy, setIsBusy] = useState(false);
+  const submitLockRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [assigneeInput, setAssigneeInput] = useState("");
@@ -219,6 +220,11 @@ export default function TaskTrackerPage() {
   };
 
   const onAddTask = async () => {
+    // Synchronous re-entrancy lock — blocks duplicate submits even if React hasn't
+    // flushed setIsBusy yet (e.g. rapid double clicks or Enter-key repeats).
+    if (submitLockRef.current || isBusy) return;
+    submitLockRef.current = true;
+
     const normalizedTaskTitle = form.taskTitle.trim();
     const monthStartDefault = `${selectedMonth}-01`;
     const resolvedDateAssigned = form.dateAssigned || monthStartDefault;
@@ -226,11 +232,13 @@ export default function TaskTrackerPage() {
 
     if (!normalizedTaskTitle || selectedAssignees.length === 0) {
       setError("Task, Assignees, Priority, and Status are required.");
+      submitLockRef.current = false;
       return;
     }
 
     if (resolvedDueDate < resolvedDateAssigned) {
       setError("End Date cannot be earlier than Start Date.");
+      submitLockRef.current = false;
       return;
     }
 
@@ -281,11 +289,15 @@ export default function TaskTrackerPage() {
         setUploadQueue([]);
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to create task.";
-      setError(message);
-      toast.error(message);
+      const raw = err instanceof Error ? err.message : "Failed to create task.";
+      const friendly = raw.includes("duplicate_task")
+        ? "This task was just created moments ago. Refresh to see it — no duplicate was saved."
+        : raw;
+      setError(friendly);
+      toast.error(friendly);
     } finally {
       setIsBusy(false);
+      submitLockRef.current = false;
     }
   };
 
