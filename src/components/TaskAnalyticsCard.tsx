@@ -155,6 +155,78 @@ export default function TaskAnalyticsCard() {
     URL.revokeObjectURL(url);
   };
 
+  const handleExportPng = async () => {
+    const container = chartRef.current;
+    if (!container) return;
+    const svg = container.querySelector("svg");
+    if (!svg) return;
+
+    const clone = svg.cloneNode(true) as SVGSVGElement;
+    const rect = svg.getBoundingClientRect();
+    const width = Math.ceil(rect.width);
+    const height = Math.ceil(rect.height);
+    clone.setAttribute("width", String(width));
+    clone.setAttribute("height", String(height));
+    clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+    // Inline computed styles so text/colors render in the raster
+    const inlineStyles = (src: Element, dst: Element) => {
+      const cs = window.getComputedStyle(src);
+      const props = ["fill", "stroke", "stroke-width", "font-family", "font-size", "font-weight", "opacity", "color"];
+      let style = "";
+      for (const p of props) {
+        const v = cs.getPropertyValue(p);
+        if (v) style += `${p}:${v};`;
+      }
+      (dst as HTMLElement).setAttribute("style", style);
+      const srcChildren = src.children;
+      const dstChildren = dst.children;
+      for (let i = 0; i < srcChildren.length; i++) {
+        inlineStyles(srcChildren[i], dstChildren[i]);
+      }
+    };
+    inlineStyles(svg, clone);
+
+    const svgString = new XMLSerializer().serializeToString(clone);
+    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const svgUrl = URL.createObjectURL(svgBlob);
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("svg load failed"));
+      img.src = svgUrl;
+    });
+
+    const scale = 2;
+    const canvas = document.createElement("canvas");
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      URL.revokeObjectURL(svgUrl);
+      return;
+    }
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0, width, height);
+    URL.revokeObjectURL(svgUrl);
+
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `task-analytics-${year}-${groupBy}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, "image/png");
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -183,6 +255,9 @@ export default function TaskAnalyticsCard() {
             <Button size="sm" variant="outline" onClick={handleExport} disabled={loading || chartData.length === 0}>
               Export CSV
             </Button>
+            <Button size="sm" variant="outline" onClick={handleExportPng} disabled={loading || chartData.length === 0}>
+              Export PNG
+            </Button>
           </div>
         </CardTitle>
         <CardDescription>
@@ -193,7 +268,7 @@ export default function TaskAnalyticsCard() {
       </CardHeader>
       <CardContent>
         {error && <p className="text-sm text-destructive">{error}</p>}
-        <div className="h-72 w-full">
+        <div className="h-72 w-full" ref={chartRef}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" />
