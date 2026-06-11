@@ -159,7 +159,7 @@ export default function TaskAnalyticsCard() {
     URL.revokeObjectURL(url);
   };
 
-  const handleExportPng = async () => {
+  const renderPngBlob = async (): Promise<Blob | null> => {
     const container = chartRef.current;
     if (!container) return;
     const svg = container.querySelector("svg");
@@ -307,17 +307,43 @@ export default function TaskAnalyticsCard() {
       lx += itemW;
     }
 
-    canvas.toBlob((blob) => {
+    const blob: Blob | null = await new Promise((resolve) =>
+      canvas.toBlob((b) => resolve(b), "image/png"),
+    );
+    return blob;
+  };
+
+  const handlePreviewPng = async () => {
+    setPreviewBusy(true);
+    try {
+      const blob = await renderPngBlob();
       if (!blob) return;
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `task-analytics-${year}-${groupBy}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, "image/png");
+      setPreviewBlob(blob);
+      setPreviewUrl(url);
+    } finally {
+      setPreviewBusy(false);
+    }
+  };
+
+  const handleConfirmDownload = () => {
+    if (!previewBlob) return;
+    const url = URL.createObjectURL(previewBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `task-analytics-${year}-${groupBy}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    closePreview();
+  };
+
+  const closePreview = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    setPreviewBlob(null);
   };
 
   return (
