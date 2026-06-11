@@ -374,8 +374,13 @@ export default function TaskAnalyticsCard() {
             <Button size="sm" variant="outline" onClick={handleExport} disabled={loading || chartData.length === 0}>
               Export CSV
             </Button>
-            <Button size="sm" variant="outline" onClick={handleExportPng} disabled={loading || chartData.length === 0}>
-              Export PNG
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handlePreviewPng}
+              disabled={loading || chartData.length === 0 || previewBusy}
+            >
+              {previewBusy ? "Preparing…" : "Export PNG"}
             </Button>
           </div>
         </CardTitle>
