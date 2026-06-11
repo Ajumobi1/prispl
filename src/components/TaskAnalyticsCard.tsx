@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -52,9 +52,7 @@ interface TaskRow {
 }
 
 export default function TaskAnalyticsCard() {
-  const chartRef = (typeof window !== "undefined")
-    ? (globalThis as any)._taskAnalyticsRef ?? ((globalThis as any)._taskAnalyticsRef = { current: null as HTMLDivElement | null })
-    : { current: null };
+  const chartRef = useRef<HTMLDivElement | null>(null);
   const [rows, setRows] = useState<TaskRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
