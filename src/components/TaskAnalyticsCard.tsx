@@ -161,9 +161,9 @@ export default function TaskAnalyticsCard() {
 
   const renderPngBlob = async (): Promise<Blob | null> => {
     const container = chartRef.current;
-    if (!container) return;
+    if (!container) return null;
     const svg = container.querySelector("svg");
-    if (!svg) return;
+    if (!svg) return null;
 
     const clone = svg.cloneNode(true) as SVGSVGElement;
     const rect = svg.getBoundingClientRect();
@@ -244,7 +244,7 @@ export default function TaskAnalyticsCard() {
     const ctx = canvas.getContext("2d");
     if (!ctx) {
       URL.revokeObjectURL(svgUrl);
-      return;
+      return null;
     }
     ctx.scale(scale, scale);
     ctx.fillStyle = "#ffffff";
@@ -420,6 +420,27 @@ export default function TaskAnalyticsCard() {
           </ResponsiveContainer>
         </div>
       </CardContent>
+
+      <Dialog open={!!previewUrl} onOpenChange={(open) => { if (!open) closePreview(); }}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>PNG export preview</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[70vh] overflow-auto rounded border bg-muted/30 p-2">
+            {previewUrl && (
+              <img
+                src={previewUrl}
+                alt="Task analytics PNG preview"
+                className="mx-auto h-auto w-full"
+              />
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closePreview}>Cancel</Button>
+            <Button onClick={handleConfirmDownload}>Download PNG</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
