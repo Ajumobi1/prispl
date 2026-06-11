@@ -163,10 +163,10 @@ export default function TaskAnalyticsCard() {
 
     const clone = svg.cloneNode(true) as SVGSVGElement;
     const rect = svg.getBoundingClientRect();
-    const width = Math.ceil(rect.width);
-    const height = Math.ceil(rect.height);
-    clone.setAttribute("width", String(width));
-    clone.setAttribute("height", String(height));
+    const chartW = Math.ceil(rect.width);
+    const chartH = Math.ceil(rect.height);
+    clone.setAttribute("width", String(chartW));
+    clone.setAttribute("height", String(chartH));
     clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
 
     // Inline computed styles so text/colors render in the raster
@@ -199,20 +199,109 @@ export default function TaskAnalyticsCard() {
       img.src = svgUrl;
     });
 
+    // Layout: title, [y-axis title][chart], legend, x-axis title
     const scale = 2;
+    const padding = 16;
+    const titleH = 28;
+    const yAxisTitleW = 20;
+    const xAxisTitleH = 22;
+
+    // Measure legend wrapping
+    const legendFont = "12px system-ui, -apple-system, Segoe UI, sans-serif";
+    const titleFont = "bold 16px system-ui, -apple-system, Segoe UI, sans-serif";
+    const axisTitleFont = "italic 12px system-ui, -apple-system, Segoe UI, sans-serif";
+    const swatch = 12;
+    const itemGap = 16;
+    const rowH = 20;
+
+    const totalW = chartW + yAxisTitleW + padding * 2;
+    // First pass to compute legend height
+    const measureCanvas = document.createElement("canvas");
+    const mctx = measureCanvas.getContext("2d")!;
+    mctx.font = legendFont;
+    const availW = totalW - padding * 2;
+    let curX = 0;
+    let rows = 1;
+    for (const k of keys) {
+      const w = swatch + 6 + mctx.measureText(k).width + itemGap;
+      if (curX + w > availW && curX > 0) {
+        rows += 1;
+        curX = 0;
+      }
+      curX += w;
+    }
+    const legendH = keys.length ? rows * rowH + 8 : 0;
+
+    const totalH = padding + titleH + chartH + legendH + xAxisTitleH + padding;
+
     const canvas = document.createElement("canvas");
-    canvas.width = width * scale;
-    canvas.height = height * scale;
+    canvas.width = totalW * scale;
+    canvas.height = totalH * scale;
     const ctx = canvas.getContext("2d");
     if (!ctx) {
       URL.revokeObjectURL(svgUrl);
       return;
     }
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.scale(scale, scale);
-    ctx.drawImage(img, 0, 0, width, height);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, totalW, totalH);
+
+    // Title
+    ctx.fillStyle = "#111827";
+    ctx.font = titleFont;
+    ctx.textBaseline = "top";
+    ctx.textAlign = "left";
+    ctx.fillText(
+      `Yearly Task Analytics — ${year} (by ${groupBy})`,
+      padding,
+      padding,
+    );
+
+    // Y-axis title (rotated)
+    ctx.save();
+    ctx.fillStyle = "#374151";
+    ctx.font = axisTitleFont;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.translate(padding, padding + titleH + chartH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText("Number of tasks", 0, 0);
+    ctx.restore();
+
+    // Chart
+    ctx.drawImage(img, padding + yAxisTitleW, padding + titleH, chartW, chartH);
     URL.revokeObjectURL(svgUrl);
+
+    // X-axis title
+    ctx.fillStyle = "#374151";
+    ctx.font = axisTitleFont;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText(
+      "Month",
+      padding + yAxisTitleW + chartW / 2,
+      padding + titleH + chartH + legendH + 2,
+    );
+
+    // Legend
+    ctx.font = legendFont;
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "left";
+    let lx = padding;
+    let ly = padding + titleH + chartH + 8;
+    for (const k of keys) {
+      const labelW = ctx.measureText(k).width;
+      const itemW = swatch + 6 + labelW + itemGap;
+      if (lx + itemW > totalW - padding && lx > padding) {
+        lx = padding;
+        ly += rowH;
+      }
+      ctx.fillStyle = colorMap[k] ?? "#3b82f6";
+      ctx.fillRect(lx, ly + rowH / 2 - swatch / 2, swatch, swatch);
+      ctx.fillStyle = "#111827";
+      ctx.fillText(k, lx + swatch + 6, ly + rowH / 2);
+      lx += itemW;
+    }
 
     canvas.toBlob((blob) => {
       if (!blob) return;
