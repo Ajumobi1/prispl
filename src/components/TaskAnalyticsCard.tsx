@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 
 type GroupMode = "unit" | "status" | "priority";
@@ -58,6 +59,9 @@ export default function TaskAnalyticsCard() {
   const [error, setError] = useState<string | null>(null);
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [groupBy, setGroupBy] = useState<GroupMode>("unit");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
+  const [previewBusy, setPreviewBusy] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -155,11 +159,11 @@ export default function TaskAnalyticsCard() {
     URL.revokeObjectURL(url);
   };
 
-  const handleExportPng = async () => {
+  const renderPngBlob = async (): Promise<Blob | null> => {
     const container = chartRef.current;
-    if (!container) return;
+    if (!container) return null;
     const svg = container.querySelector("svg");
-    if (!svg) return;
+    if (!svg) return null;
 
     const clone = svg.cloneNode(true) as SVGSVGElement;
     const rect = svg.getBoundingClientRect();
@@ -240,7 +244,7 @@ export default function TaskAnalyticsCard() {
     const ctx = canvas.getContext("2d");
     if (!ctx) {
       URL.revokeObjectURL(svgUrl);
-      return;
+      return null;
     }
     ctx.scale(scale, scale);
     ctx.fillStyle = "#ffffff";
@@ -303,17 +307,43 @@ export default function TaskAnalyticsCard() {
       lx += itemW;
     }
 
-    canvas.toBlob((blob) => {
+    const blob: Blob | null = await new Promise((resolve) =>
+      canvas.toBlob((b) => resolve(b), "image/png"),
+    );
+    return blob;
+  };
+
+  const handlePreviewPng = async () => {
+    setPreviewBusy(true);
+    try {
+      const blob = await renderPngBlob();
       if (!blob) return;
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `task-analytics-${year}-${groupBy}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, "image/png");
+      setPreviewBlob(blob);
+      setPreviewUrl(url);
+    } finally {
+      setPreviewBusy(false);
+    }
+  };
+
+  const handleConfirmDownload = () => {
+    if (!previewBlob) return;
+    const url = URL.createObjectURL(previewBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `task-analytics-${year}-${groupBy}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    closePreview();
+  };
+
+  const closePreview = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    setPreviewBlob(null);
   };
 
   return (
@@ -344,8 +374,13 @@ export default function TaskAnalyticsCard() {
             <Button size="sm" variant="outline" onClick={handleExport} disabled={loading || chartData.length === 0}>
               Export CSV
             </Button>
-            <Button size="sm" variant="outline" onClick={handleExportPng} disabled={loading || chartData.length === 0}>
-              Export PNG
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handlePreviewPng}
+              disabled={loading || chartData.length === 0 || previewBusy}
+            >
+              {previewBusy ? "Preparing…" : "Export PNG"}
             </Button>
           </div>
         </CardTitle>
@@ -385,6 +420,27 @@ export default function TaskAnalyticsCard() {
           </ResponsiveContainer>
         </div>
       </CardContent>
+
+      <Dialog open={!!previewUrl} onOpenChange={(open) => { if (!open) closePreview(); }}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>PNG export preview</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[70vh] overflow-auto rounded border bg-muted/30 p-2">
+            {previewUrl && (
+              <img
+                src={previewUrl}
+                alt="Task analytics PNG preview"
+                className="mx-auto h-auto w-full"
+              />
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closePreview}>Cancel</Button>
+            <Button onClick={handleConfirmDownload}>Download PNG</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
