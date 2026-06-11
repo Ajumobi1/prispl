@@ -52,6 +52,9 @@ interface TaskRow {
 }
 
 export default function TaskAnalyticsCard() {
+  const chartRef = (typeof window !== "undefined")
+    ? (globalThis as any)._taskAnalyticsRef ?? ((globalThis as any)._taskAnalyticsRef = { current: null as HTMLDivElement | null })
+    : { current: null };
   const [rows, setRows] = useState<TaskRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
