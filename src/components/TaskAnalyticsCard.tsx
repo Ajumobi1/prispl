@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 
 type GroupMode = "unit" | "status" | "priority";
@@ -58,6 +59,9 @@ export default function TaskAnalyticsCard() {
   const [error, setError] = useState<string | null>(null);
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [groupBy, setGroupBy] = useState<GroupMode>("unit");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
+  const [previewBusy, setPreviewBusy] = useState(false);
 
   useEffect(() => {
     let active = true;
