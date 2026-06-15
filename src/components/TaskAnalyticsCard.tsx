@@ -287,6 +287,20 @@ export default function TaskAnalyticsCard() {
       padding + titleH + chartH + legendH + 2,
     );
 
+    // Resolve CSS-variable colors (e.g. "hsl(var(--primary))") to concrete RGB
+    const colorProbe = document.createElement("div");
+    colorProbe.style.position = "absolute";
+    colorProbe.style.visibility = "hidden";
+    colorProbe.style.pointerEvents = "none";
+    document.body.appendChild(colorProbe);
+    const resolveColor = (c: string | undefined): string => {
+      if (!c) return "#3b82f6";
+      colorProbe.style.color = "";
+      colorProbe.style.color = c;
+      const resolved = window.getComputedStyle(colorProbe).color;
+      return resolved && resolved !== "" ? resolved : "#3b82f6";
+    };
+
     // Legend
     ctx.font = legendFont;
     ctx.textBaseline = "middle";
@@ -300,12 +314,13 @@ export default function TaskAnalyticsCard() {
         lx = padding;
         ly += rowH;
       }
-      ctx.fillStyle = colorMap[k] ?? "#3b82f6";
+      ctx.fillStyle = resolveColor(colorMap[k]);
       ctx.fillRect(lx, ly + rowH / 2 - swatch / 2, swatch, swatch);
       ctx.fillStyle = "#111827";
       ctx.fillText(k, lx + swatch + 6, ly + rowH / 2);
       lx += itemW;
     }
+    document.body.removeChild(colorProbe);
 
     const blob: Blob | null = await new Promise((resolve) =>
       canvas.toBlob((b) => resolve(b), "image/png"),
