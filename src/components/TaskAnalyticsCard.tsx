@@ -139,6 +139,29 @@ export default function TaskAnalyticsCard() {
     return best;
   }, [chartData]);
 
+  const percentData = useMemo(() => {
+    return chartData.map((row) => {
+      const total = Number(row.total) || 0;
+      const next: Record<string, string | number> = { month: row.month };
+      for (const k of keys) {
+        const v = Number(row[k]) || 0;
+        next[k] = total > 0 ? Number(((v / total) * 100).toFixed(1)) : 0;
+      }
+      next.total = total;
+      return next;
+    });
+  }, [chartData, keys]);
+
+  const donutData = useMemo(() => {
+    return keys
+      .map((k) => {
+        let sum = 0;
+        for (const row of chartData) sum += Number(row[k]) || 0;
+        return { name: k, value: sum };
+      })
+      .filter((d) => d.value > 0);
+  }, [chartData, keys]);
+
   const handleExport = () => {
     const headers = ["Month", ...keys, "Total"];
     const lines = [headers.join(",")];
