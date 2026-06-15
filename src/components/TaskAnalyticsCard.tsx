@@ -3,7 +3,12 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -23,6 +28,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { supabase } from "@/integrations/supabase/client";
 
 type GroupMode = "unit" | "status" | "priority";
+type ChartType = "stacked" | "line" | "percent" | "donut";
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const UNIT_COLORS: Record<string, string> = {
@@ -59,6 +65,7 @@ export default function TaskAnalyticsCard() {
   const [error, setError] = useState<string | null>(null);
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [groupBy, setGroupBy] = useState<GroupMode>("unit");
+  const [chartType, setChartType] = useState<ChartType>("stacked");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [previewBusy, setPreviewBusy] = useState(false);
@@ -131,6 +138,29 @@ export default function TaskAnalyticsCard() {
     }
     return best;
   }, [chartData]);
+
+  const percentData = useMemo(() => {
+    return chartData.map((row) => {
+      const total = Number(row.total) || 0;
+      const next: Record<string, string | number> = { month: row.month };
+      for (const k of keys) {
+        const v = Number(row[k]) || 0;
+        next[k] = total > 0 ? Number(((v / total) * 100).toFixed(1)) : 0;
+      }
+      next.total = total;
+      return next;
+    });
+  }, [chartData, keys]);
+
+  const donutData = useMemo(() => {
+    return keys
+      .map((k) => {
+        let sum = 0;
+        for (const row of chartData) sum += Number(row[k]) || 0;
+        return { name: k, value: sum };
+      })
+      .filter((d) => d.value > 0);
+  }, [chartData, keys]);
 
   const handleExport = () => {
     const headers = ["Month", ...keys, "Total"];
@@ -386,6 +416,14 @@ export default function TaskAnalyticsCard() {
                 <TabsTrigger value="priority">Priority</TabsTrigger>
               </TabsList>
             </Tabs>
+            <Tabs value={chartType} onValueChange={(v) => setChartType(v as ChartType)}>
+              <TabsList>
+                <TabsTrigger value="stacked">Stacked</TabsTrigger>
+                <TabsTrigger value="line">Line</TabsTrigger>
+                <TabsTrigger value="percent">100%</TabsTrigger>
+                <TabsTrigger value="donut">Donut</TabsTrigger>
+              </TabsList>
+            </Tabs>
             <Button size="sm" variant="outline" onClick={handleExport} disabled={loading || chartData.length === 0}>
               Export CSV
             </Button>
@@ -409,29 +447,99 @@ export default function TaskAnalyticsCard() {
         {error && <p className="text-sm text-destructive">{error}</p>}
         <div className="h-72 w-full" ref={chartRef}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" />
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-              <Tooltip
-                contentStyle={{
-                  background: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: 8,
-                  fontSize: 12,
-                }}
-              />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-              {keys.map((k) => (
-                <Bar
-                  key={k}
-                  dataKey={k}
-                  stackId="a"
-                  fill={colorMap[k] ?? "hsl(var(--primary))"}
-                  radius={[2, 2, 0, 0]}
+            {chartType === "donut" ? (
+              <PieChart margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
                 />
-              ))}
-            </BarChart>
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Pie
+                  data={donutData}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius="55%"
+                  outerRadius="80%"
+                  paddingAngle={2}
+                >
+                  {donutData.map((d) => (
+                    <Cell key={d.name} fill={colorMap[d.name] ?? "hsl(var(--primary))"} />
+                  ))}
+                </Pie>
+              </PieChart>
+            ) : chartType === "line" ? (
+              <LineChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                {keys.map((k) => (
+                  <Line
+                    key={k}
+                    type="monotone"
+                    dataKey={k}
+                    stroke={colorMap[k] ?? "hsl(var(--primary))"}
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 5 }}
+                  />
+                ))}
+              </LineChart>
+            ) : (
+              <BarChart
+                data={chartType === "percent" ? percentData : chartData}
+                margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
+                stackOffset={chartType === "percent" ? "expand" : undefined}
+              >
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis
+                  allowDecimals={false}
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={
+                    chartType === "percent"
+                      ? (v: number) => `${Math.round(v * 100)}%`
+                      : undefined
+                  }
+                  domain={chartType === "percent" ? [0, 1] : undefined}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                  formatter={
+                    chartType === "percent"
+                      ? (value: number) => `${value}%`
+                      : undefined
+                  }
+                />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                {keys.map((k) => (
+                  <Bar
+                    key={k}
+                    dataKey={k}
+                    stackId="a"
+                    fill={colorMap[k] ?? "hsl(var(--primary))"}
+                    radius={[2, 2, 0, 0]}
+                  />
+                ))}
+              </BarChart>
+            )}
           </ResponsiveContainer>
         </div>
       </CardContent>
