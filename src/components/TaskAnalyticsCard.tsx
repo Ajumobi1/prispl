@@ -65,6 +65,7 @@ export default function TaskAnalyticsCard() {
   const [error, setError] = useState<string | null>(null);
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [groupBy, setGroupBy] = useState<GroupMode>("unit");
+  const [chartType, setChartType] = useState<ChartType>("stacked");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [previewBusy, setPreviewBusy] = useState(false);
