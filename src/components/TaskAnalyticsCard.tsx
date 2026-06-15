@@ -447,29 +447,99 @@ export default function TaskAnalyticsCard() {
         {error && <p className="text-sm text-destructive">{error}</p>}
         <div className="h-72 w-full" ref={chartRef}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" />
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-              <Tooltip
-                contentStyle={{
-                  background: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: 8,
-                  fontSize: 12,
-                }}
-              />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-              {keys.map((k) => (
-                <Bar
-                  key={k}
-                  dataKey={k}
-                  stackId="a"
-                  fill={colorMap[k] ?? "hsl(var(--primary))"}
-                  radius={[2, 2, 0, 0]}
+            {chartType === "donut" ? (
+              <PieChart margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
                 />
-              ))}
-            </BarChart>
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Pie
+                  data={donutData}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius="55%"
+                  outerRadius="80%"
+                  paddingAngle={2}
+                >
+                  {donutData.map((d) => (
+                    <Cell key={d.name} fill={colorMap[d.name] ?? "hsl(var(--primary))"} />
+                  ))}
+                </Pie>
+              </PieChart>
+            ) : chartType === "line" ? (
+              <LineChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                {keys.map((k) => (
+                  <Line
+                    key={k}
+                    type="monotone"
+                    dataKey={k}
+                    stroke={colorMap[k] ?? "hsl(var(--primary))"}
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 5 }}
+                  />
+                ))}
+              </LineChart>
+            ) : (
+              <BarChart
+                data={chartType === "percent" ? percentData : chartData}
+                margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
+                stackOffset={chartType === "percent" ? "expand" : undefined}
+              >
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis
+                  allowDecimals={false}
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={
+                    chartType === "percent"
+                      ? (v: number) => `${Math.round(v * 100)}%`
+                      : undefined
+                  }
+                  domain={chartType === "percent" ? [0, 1] : undefined}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                  formatter={
+                    chartType === "percent"
+                      ? (value: number) => `${value}%`
+                      : undefined
+                  }
+                />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                {keys.map((k) => (
+                  <Bar
+                    key={k}
+                    dataKey={k}
+                    stackId="a"
+                    fill={colorMap[k] ?? "hsl(var(--primary))"}
+                    radius={[2, 2, 0, 0]}
+                  />
+                ))}
+              </BarChart>
+            )}
           </ResponsiveContainer>
         </div>
       </CardContent>
