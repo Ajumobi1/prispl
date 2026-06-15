@@ -416,6 +416,14 @@ export default function TaskAnalyticsCard() {
                 <TabsTrigger value="priority">Priority</TabsTrigger>
               </TabsList>
             </Tabs>
+            <Tabs value={chartType} onValueChange={(v) => setChartType(v as ChartType)}>
+              <TabsList>
+                <TabsTrigger value="stacked">Stacked</TabsTrigger>
+                <TabsTrigger value="line">Line</TabsTrigger>
+                <TabsTrigger value="percent">100%</TabsTrigger>
+                <TabsTrigger value="donut">Donut</TabsTrigger>
+              </TabsList>
+            </Tabs>
             <Button size="sm" variant="outline" onClick={handleExport} disabled={loading || chartData.length === 0}>
               Export CSV
             </Button>
