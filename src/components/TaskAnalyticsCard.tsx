@@ -47,12 +47,12 @@ const PRIORITY_COLORS: Record<string, string> = {
   Low: "hsl(142 71% 45%)",
   Medium: "hsl(43 74% 49%)",
   "Urgent/High": "hsl(var(--destructive))",
-  High: "hsl(var(--destructive))",
-  Critical: "hsl(var(--destructive))",
 };
 
 interface TaskRow {
   date_assigned: string;
+  due_date: string | null;
+  updated_at: string | null;
   unit: string;
   status: string;
   priority: string;
@@ -76,7 +76,7 @@ export default function TaskAnalyticsCard() {
       setLoading(true);
       const { data, error: err } = await supabase
         .from("tasks")
-        .select("date_assigned, unit, status, priority");
+        .select("date_assigned, due_date, updated_at, unit, status, priority");
       if (!active) return;
       if (err) setError(err.message);
       else setRows((data ?? []) as TaskRow[]);
@@ -138,6 +138,32 @@ export default function TaskAnalyticsCard() {
     }
     return best;
   }, [chartData]);
+
+  const kpis = useMemo(() => {
+    const yearRows = rows.filter((r) => r.date_assigned?.startsWith(String(year)));
+    const total = yearRows.length;
+    const completed = yearRows.filter((r) => r.status === "Completed").length;
+    const blocked = yearRows.filter((r) => r.status === "Blocked").length;
+    const today = new Date().toISOString().slice(0, 10);
+    const overdue = yearRows.filter(
+      (r) => r.status !== "Completed" && r.due_date && r.due_date < today,
+    ).length;
+    let durSum = 0;
+    let durCount = 0;
+    for (const r of yearRows) {
+      if (r.status === "Completed" && r.updated_at && r.date_assigned) {
+        const start = new Date(r.date_assigned).getTime();
+        const end = new Date(r.updated_at).getTime();
+        if (Number.isFinite(start) && Number.isFinite(end) && end >= start) {
+          durSum += (end - start) / 86_400_000;
+          durCount += 1;
+        }
+      }
+    }
+    const avgDays = durCount > 0 ? durSum / durCount : null;
+    const completedPct = total > 0 ? (completed / total) * 100 : 0;
+    return { total, completed, completedPct, blocked, overdue, avgDays };
+  }, [rows, year]);
 
   const percentData = useMemo(() => {
     return chartData.map((row) => {
@@ -445,7 +471,54 @@ export default function TaskAnalyticsCard() {
       </CardHeader>
       <CardContent>
         {error && <p className="text-sm text-destructive">{error}</p>}
-        <div className="h-72 w-full" ref={chartRef}>
+
+        <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+          {[
+            { label: "Total tasks", value: kpis.total.toLocaleString() },
+            {
+              label: "Completed",
+              value: `${kpis.completed.toLocaleString()} (${kpis.completedPct.toFixed(0)}%)`,
+            },
+            {
+              label: "Overdue",
+              value: kpis.overdue.toLocaleString(),
+              tone: kpis.overdue > 0 ? "text-destructive" : "",
+            },
+            {
+              label: "Blocked",
+              value: kpis.blocked.toLocaleString(),
+              tone: kpis.blocked > 0 ? "text-destructive" : "",
+            },
+            {
+              label: "Avg time to complete",
+              value: kpis.avgDays == null ? "—" : `${kpis.avgDays.toFixed(1)}d`,
+            },
+          ].map((k) => (
+            <div
+              key={k.label}
+              className="rounded-lg border bg-card/50 p-3"
+            >
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                {k.label}
+              </div>
+              <div className={`mt-1 text-lg font-semibold ${k.tone ?? ""}`}>
+                {k.value}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {!loading && chartData.every((d) => Number(d.total) === 0) ? (
+          <div className="flex h-72 w-full items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground">
+            No tasks recorded for {year}.
+          </div>
+        ) : (
+        <div
+          className="h-72 w-full"
+          ref={chartRef}
+          role="img"
+          aria-label={`Yearly task analytics for ${year} grouped by ${groupBy}, shown as ${chartType} chart`}
+        >
           <ResponsiveContainer width="100%" height="100%">
             {chartType === "donut" ? (
               <PieChart margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
@@ -542,6 +615,7 @@ export default function TaskAnalyticsCard() {
             )}
           </ResponsiveContainer>
         </div>
+        )}
       </CardContent>
 
       <Dialog open={!!previewUrl} onOpenChange={(open) => { if (!open) closePreview(); }}>
