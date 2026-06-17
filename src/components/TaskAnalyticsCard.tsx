@@ -76,7 +76,7 @@ export default function TaskAnalyticsCard() {
       setLoading(true);
       const { data, error: err } = await supabase
         .from("tasks")
-        .select("date_assigned, unit, status, priority");
+        .select("date_assigned, due_date, updated_at, unit, status, priority");
       if (!active) return;
       if (err) setError(err.message);
       else setRows((data ?? []) as TaskRow[]);
