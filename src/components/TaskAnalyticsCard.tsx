@@ -47,12 +47,12 @@ const PRIORITY_COLORS: Record<string, string> = {
   Low: "hsl(142 71% 45%)",
   Medium: "hsl(43 74% 49%)",
   "Urgent/High": "hsl(var(--destructive))",
-  High: "hsl(var(--destructive))",
-  Critical: "hsl(var(--destructive))",
 };
 
 interface TaskRow {
   date_assigned: string;
+  due_date: string | null;
+  updated_at: string | null;
   unit: string;
   status: string;
   priority: string;
