@@ -615,6 +615,7 @@ export default function TaskAnalyticsCard() {
             )}
           </ResponsiveContainer>
         </div>
+        )}
       </CardContent>
 
       <Dialog open={!!previewUrl} onOpenChange={(open) => { if (!open) closePreview(); }}>
