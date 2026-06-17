@@ -139,6 +139,32 @@ export default function TaskAnalyticsCard() {
     return best;
   }, [chartData]);
 
+  const kpis = useMemo(() => {
+    const yearRows = rows.filter((r) => r.date_assigned?.startsWith(String(year)));
+    const total = yearRows.length;
+    const completed = yearRows.filter((r) => r.status === "Completed").length;
+    const blocked = yearRows.filter((r) => r.status === "Blocked").length;
+    const today = new Date().toISOString().slice(0, 10);
+    const overdue = yearRows.filter(
+      (r) => r.status !== "Completed" && r.due_date && r.due_date < today,
+    ).length;
+    let durSum = 0;
+    let durCount = 0;
+    for (const r of yearRows) {
+      if (r.status === "Completed" && r.updated_at && r.date_assigned) {
+        const start = new Date(r.date_assigned).getTime();
+        const end = new Date(r.updated_at).getTime();
+        if (Number.isFinite(start) && Number.isFinite(end) && end >= start) {
+          durSum += (end - start) / 86_400_000;
+          durCount += 1;
+        }
+      }
+    }
+    const avgDays = durCount > 0 ? durSum / durCount : null;
+    const completedPct = total > 0 ? (completed / total) * 100 : 0;
+    return { total, completed, completedPct, blocked, overdue, avgDays };
+  }, [rows, year]);
+
   const percentData = useMemo(() => {
     return chartData.map((row) => {
       const total = Number(row.total) || 0;
