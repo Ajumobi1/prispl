@@ -471,7 +471,54 @@ export default function TaskAnalyticsCard() {
       </CardHeader>
       <CardContent>
         {error && <p className="text-sm text-destructive">{error}</p>}
-        <div className="h-72 w-full" ref={chartRef}>
+
+        <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+          {[
+            { label: "Total tasks", value: kpis.total.toLocaleString() },
+            {
+              label: "Completed",
+              value: `${kpis.completed.toLocaleString()} (${kpis.completedPct.toFixed(0)}%)`,
+            },
+            {
+              label: "Overdue",
+              value: kpis.overdue.toLocaleString(),
+              tone: kpis.overdue > 0 ? "text-destructive" : "",
+            },
+            {
+              label: "Blocked",
+              value: kpis.blocked.toLocaleString(),
+              tone: kpis.blocked > 0 ? "text-destructive" : "",
+            },
+            {
+              label: "Avg time to complete",
+              value: kpis.avgDays == null ? "—" : `${kpis.avgDays.toFixed(1)}d`,
+            },
+          ].map((k) => (
+            <div
+              key={k.label}
+              className="rounded-lg border bg-card/50 p-3"
+            >
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                {k.label}
+              </div>
+              <div className={`mt-1 text-lg font-semibold ${k.tone ?? ""}`}>
+                {k.value}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {!loading && chartData.every((d) => Number(d.total) === 0) ? (
+          <div className="flex h-72 w-full items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground">
+            No tasks recorded for {year}.
+          </div>
+        ) : (
+        <div
+          className="h-72 w-full"
+          ref={chartRef}
+          role="img"
+          aria-label={`Yearly task analytics for ${year} grouped by ${groupBy}, shown as ${chartType} chart`}
+        >
           <ResponsiveContainer width="100%" height="100%">
             {chartType === "donut" ? (
               <PieChart margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
