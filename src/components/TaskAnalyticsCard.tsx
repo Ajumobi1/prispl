@@ -189,26 +189,53 @@ export default function TaskAnalyticsCard() {
   }, [chartData, keys]);
 
   const handleExport = () => {
-    const headers = ["Month", ...keys, "Total"];
-    const lines = [headers.join(",")];
-    for (const row of chartData) {
-      const values = headers.map((h) => {
-        const v = row[h];
-        if (v === undefined || v === null) return "";
-        const s = String(v);
-        if (s.includes(",") || s.includes('"') || s.includes("\n")) {
-          return `"${s.replace(/"/g, '""')}"`;
-        }
-        return s;
+    const esc = (v: unknown) => {
+      if (v === undefined || v === null) return "";
+      const s = String(v);
+      return /[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+
+    let headers: string[];
+    let dataRows: (string | number)[][];
+
+    if (chartType === "donut") {
+      const grandTotal = donutData.reduce((s, d) => s + d.value, 0);
+      headers = [groupBy === "unit" ? "Unit" : groupBy === "status" ? "Status" : "Priority", "Total", "Share %"];
+      dataRows = donutData.map((d) => [
+        d.name,
+        d.value,
+        grandTotal > 0 ? ((d.value / grandTotal) * 100).toFixed(1) : "0.0",
+      ]);
+      dataRows.push(["Total", grandTotal, "100.0"]);
+    } else {
+      const source = chartType === "percent" ? percentData : chartData;
+      const totalLabel = chartType === "percent" ? "Total %" : "Total";
+      headers = ["Month", ...keys, totalLabel];
+      dataRows = source.map((row) => {
+        const sum = keys.reduce((s, k) => s + (Number(row[k]) || 0), 0);
+        const totalCell = chartType === "percent"
+          ? (sum > 0 ? sum.toFixed(1) : "0.0")
+          : sum;
+        return [String(row.month), ...keys.map((k) => row[k] as number), totalCell];
       });
-      lines.push(values.join(","));
+      // Column totals row
+      const colTotals = keys.map((k) =>
+        chartData.reduce((s, r) => s + (Number(r[k]) || 0), 0),
+      );
+      const grand = colTotals.reduce((s, n) => s + n, 0);
+      dataRows.push([
+        "Total",
+        ...colTotals,
+        chartType === "percent" ? "100.0" : grand,
+      ]);
     }
-    const csv = lines.join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+
+    const lines = [headers.join(","), ...dataRows.map((r) => r.map(esc).join(","))];
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `task-analytics-${year}-${groupBy}.csv`;
+    a.download = `task-analytics-${year}-${groupBy}-${chartType}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
