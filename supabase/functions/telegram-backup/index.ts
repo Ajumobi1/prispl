@@ -12,6 +12,17 @@ const TG_CHAT = Deno.env.get("TELEGRAM_CHAT_ID");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// Escape user-controlled strings before embedding them in a Telegram
+// HTML-mode message. Prevents approved users from injecting <a>, <b>,
+// <code>, etc. via task titles, filenames, or spoofed uploader names.
+function esc(v: unknown): string {
+  if (v === null || v === undefined) return "-";
+  return String(v)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 function tgUrl(method: string) {
   return `https://api.telegram.org/bot${TG_TOKEN}/${method}`;
 }
