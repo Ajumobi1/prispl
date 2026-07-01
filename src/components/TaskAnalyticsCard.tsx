@@ -69,6 +69,12 @@ export default function TaskAnalyticsCard() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [previewBusy, setPreviewBusy] = useState(false);
+  const [csvPreview, setCsvPreview] = useState<{
+    headers: string[];
+    rows: (string | number)[][];
+    filename: string;
+    csv: string;
+  } | null>(null);
 
   useEffect(() => {
     let active = true;
