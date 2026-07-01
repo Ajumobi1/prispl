@@ -683,6 +683,45 @@ export default function TaskAnalyticsCard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!csvPreview} onOpenChange={(open) => { if (!open) setCsvPreview(null); }}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>CSV export preview</DialogTitle>
+          </DialogHeader>
+          {csvPreview && (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                {csvPreview.filename} · {csvPreview.rows.length} row{csvPreview.rows.length === 1 ? "" : "s"} · {csvPreview.headers.length} column{csvPreview.headers.length === 1 ? "" : "s"}
+              </p>
+              <div className="max-h-[60vh] overflow-auto rounded border">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-muted">
+                    <tr>
+                      {csvPreview.headers.map((h) => (
+                        <th key={h} className="border-b px-3 py-2 text-left font-medium">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {csvPreview.rows.map((r, i) => (
+                      <tr key={i} className={i === csvPreview.rows.length - 1 ? "bg-muted/40 font-medium" : ""}>
+                        {r.map((c, j) => (
+                          <td key={j} className="border-b px-3 py-1.5">{String(c)}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCsvPreview(null)}>Cancel</Button>
+            <Button onClick={handleConfirmCsvDownload}>Download CSV</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
