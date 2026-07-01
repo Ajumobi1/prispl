@@ -147,10 +147,12 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
-    // Approval check (uses service-role to bypass RLS on profiles).
+    // Approval check + trusted uploader lookup. Never trust body.uploader —
+    // use the caller's own profile so an approved user cannot spoof another
+    // user's name in the Telegram notification.
     const { data: callerProfile } = await supabase
       .from("profiles")
-      .select("status")
+      .select("status, full_name, username")
       .eq("user_id", caller.id)
       .maybeSingle();
     if (!callerProfile || callerProfile.status !== "approved") {
@@ -159,6 +161,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const trustedUploader = callerProfile.full_name || callerProfile.username || caller.email || "Unknown";
     const nowStr = new Date().toLocaleString("en-GB", { timeZone: "Africa/Lagos" });
 
     if (body.type === "task") {
@@ -170,21 +173,20 @@ Deno.serve(async (req) => {
       if (error) throw error;
 
       const t = body.task ?? {};
-      const uploader = body.uploader ?? "Unknown";
 
       const newTaskMonth = monthKey(t.dateAssigned ?? t.date_assigned ?? null);
       const newTaskTag = monthFileTag(newTaskMonth.key, newTaskMonth.label);
 
       const headerMsg =
         `🆕 <b>New Task Added</b>\n` +
-        `<b>By:</b> ${uploader}\n` +
-        `<b>When:</b> ${nowStr}\n` +
-        `<b>Unit:</b> ${t.unit ?? "-"}\n` +
-        `<b>Title:</b> ${t.taskTitle ?? "-"}\n` +
-        `<b>Assignee:</b> ${t.assignee ?? "-"}\n` +
-        `<b>Start:</b> ${t.dateAssigned ?? "-"}\n` +
-        `<b>Due:</b> ${t.dueDate ?? "-"}\n` +
-        `<b>Month:</b> ${newTaskTag}\n\n` +
+        `<b>By:</b> ${esc(trustedUploader)}\n` +
+        `<b>When:</b> ${esc(nowStr)}\n` +
+        `<b>Unit:</b> ${esc(t.unit)}\n` +
+        `<b>Title:</b> ${esc(t.taskTitle)}\n` +
+        `<b>Assignee:</b> ${esc(t.assignee)}\n` +
+        `<b>Start:</b> ${esc(t.dateAssigned)}\n` +
+        `<b>Due:</b> ${esc(t.dueDate)}\n` +
+        `<b>Month:</b> ${esc(newTaskTag)}\n\n` +
         `📊 Backup files (one per month) follow.`;
       await sendMessage(headerMsg);
 
