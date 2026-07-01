@@ -203,8 +203,8 @@ Deno.serve(async (req) => {
           const filename = `prs-tasks-${tag}.xlsx`;
           const isNewTaskMonth = key === newTaskMonth.key;
           const caption =
-            `📅 <b>${label}</b> ${isNewTaskMonth ? "⭐" : ""}\n` +
-            `<b>Month tag:</b> ${tag}\n` +
+            `📅 <b>${esc(label)}</b> ${isNewTaskMonth ? "⭐" : ""}\n` +
+            `<b>Month tag:</b> ${esc(tag)}\n` +
             `<b>Tasks in file:</b> ${rows.length}`;
           await sendDocument(
             filename,
@@ -264,7 +264,7 @@ Deno.serve(async (req) => {
 
     if (body.type === "healthcheck") {
       const startedAt = Date.now();
-      const requester = body.uploader ?? caller.email ?? "Unknown";
+      const requester = trustedUploader;
 
       // Counts + latest task
       const { count: taskCount } = await supabase
@@ -312,17 +312,17 @@ Deno.serve(async (req) => {
       const elapsedMs = Date.now() - startedAt;
       const msg =
         `🩺 <b>Telegram Backup Health Check</b>\n` +
-        `<b>By:</b> ${requester}\n` +
-        `<b>When:</b> ${nowStr}\n` +
+        `<b>By:</b> ${esc(requester)}\n` +
+        `<b>When:</b> ${esc(nowStr)}\n` +
         `<b>Tasks in DB:</b> ${taskCount ?? 0}\n` +
         `<b>Attachments in DB:</b> ${attCount ?? 0}\n` +
         (latestTask
-          ? `<b>Latest task:</b> #${latestTask.serial_number} — ${latestTask.task_title} (${latestTask.unit})\n`
+          ? `<b>Latest task:</b> #${esc(latestTask.serial_number)} — ${esc(latestTask.task_title)} (${esc(latestTask.unit)})\n`
           : `<b>Latest task:</b> none\n`) +
         (latestAtt
-          ? `<b>Latest file:</b> ${latestAtt.file_name} (${Math.round(Number(latestAtt.file_size) / 1024)} KB)\n`
+          ? `<b>Latest file:</b> ${esc(latestAtt.file_name)} (${Math.round(Number(latestAtt.file_size) / 1024)} KB)\n`
           : `<b>Latest file:</b> none\n`) +
-        `<b>Storage download:</b> ${storageOk ? "OK" : `FAIL (${storageError})`}\n` +
+        `<b>Storage download:</b> ${storageOk ? "OK" : `FAIL (${esc(storageError)})`}\n` +
         `<b>Round-trip:</b> ${elapsedMs} ms`;
       await sendMessage(msg);
 
