@@ -41,19 +41,32 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await adminClient
       .from("profiles")
-      .select("user_id, security_answer")
+      .select("user_id")
       .eq("username", normalizedUsername)
       .maybeSingle();
 
-    // Generic response for both "no such user" and "no question set"
-    if (!profile || !profile.security_answer) {
+    if (!profile) {
       return new Response(GENERIC_INVALID, {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const ok = await verifyAnswer(securityAnswer, profile.security_answer);
+    const { data: recovery } = await adminClient
+      .from("profile_recovery")
+      .select("security_answer")
+      .eq("user_id", profile.user_id)
+      .maybeSingle();
+
+    // Generic response for both "no such user" and "no question set"
+    if (!recovery || !recovery.security_answer) {
+      return new Response(GENERIC_INVALID, {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const ok = await verifyAnswer(securityAnswer, recovery.security_answer);
     if (!ok) {
       return new Response(GENERIC_INVALID, {
         status: 403,
@@ -72,11 +85,11 @@ Deno.serve(async (req) => {
 
     // Hash-upgrade: if the stored answer used the legacy fast SHA-256 hash,
     // re-hash with the modern KDF now that we know the plaintext is correct.
-    if (isLegacyHash(profile.security_answer)) {
+    if (isLegacyHash(recovery.security_answer)) {
       try {
         const upgraded = await hashAnswer(securityAnswer);
         await adminClient
-          .from("profiles")
+          .from("profile_recovery")
           .update({ security_answer: upgraded })
           .eq("user_id", profile.user_id);
       } catch (_e) {
