@@ -237,15 +237,27 @@ export default function TaskAnalyticsCard() {
     }
 
     const lines = [headers.join(","), ...dataRows.map((r) => r.map(esc).join(","))];
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const csv = lines.join("\n");
+    setCsvPreview({
+      headers,
+      rows: dataRows,
+      filename: `task-analytics-${year}-${groupBy}-${chartType}.csv`,
+      csv,
+    });
+  };
+
+  const handleConfirmCsvDownload = () => {
+    if (!csvPreview) return;
+    const blob = new Blob([csvPreview.csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `task-analytics-${year}-${groupBy}-${chartType}.csv`;
+    a.download = csvPreview.filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    setCsvPreview(null);
   };
 
   const renderPngBlob = async (): Promise<Blob | null> => {
