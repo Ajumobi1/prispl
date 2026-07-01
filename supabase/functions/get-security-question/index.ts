@@ -38,15 +38,25 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await adminClient
       .from("profiles")
-      .select("security_question")
+      .select("user_id")
       .eq("username", username.trim().toLowerCase())
       .maybeSingle();
 
-    if (!profile || !profile.security_question) {
+    if (!profile) {
       return respond({ error: GENERIC_ERROR_MESSAGE });
     }
 
-    return respond({ security_question: profile.security_question });
+    const { data: recovery } = await adminClient
+      .from("profile_recovery")
+      .select("security_question")
+      .eq("user_id", profile.user_id)
+      .maybeSingle();
+
+    if (!recovery || !recovery.security_question) {
+      return respond({ error: GENERIC_ERROR_MESSAGE });
+    }
+
+    return respond({ security_question: recovery.security_question });
   } catch (_err) {
     return respond({ error: GENERIC_ERROR_MESSAGE });
   }

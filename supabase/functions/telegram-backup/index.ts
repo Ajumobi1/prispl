@@ -12,6 +12,17 @@ const TG_CHAT = Deno.env.get("TELEGRAM_CHAT_ID");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// Escape user-controlled strings before embedding them in a Telegram
+// HTML-mode message. Prevents approved users from injecting <a>, <b>,
+// <code>, etc. via task titles, filenames, or spoofed uploader names.
+function esc(v: unknown): string {
+  if (v === null || v === undefined) return "-";
+  return String(v)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 function tgUrl(method: string) {
   return `https://api.telegram.org/bot${TG_TOKEN}/${method}`;
 }
@@ -136,10 +147,12 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
-    // Approval check (uses service-role to bypass RLS on profiles).
+    // Approval check + trusted uploader lookup. Never trust body.uploader —
+    // use the caller's own profile so an approved user cannot spoof another
+    // user's name in the Telegram notification.
     const { data: callerProfile } = await supabase
       .from("profiles")
-      .select("status")
+      .select("status, full_name, username")
       .eq("user_id", caller.id)
       .maybeSingle();
     if (!callerProfile || callerProfile.status !== "approved") {
@@ -148,6 +161,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const trustedUploader = callerProfile.full_name || callerProfile.username || caller.email || "Unknown";
     const nowStr = new Date().toLocaleString("en-GB", { timeZone: "Africa/Lagos" });
 
     if (body.type === "task") {
@@ -159,21 +173,20 @@ Deno.serve(async (req) => {
       if (error) throw error;
 
       const t = body.task ?? {};
-      const uploader = body.uploader ?? "Unknown";
 
       const newTaskMonth = monthKey(t.dateAssigned ?? t.date_assigned ?? null);
       const newTaskTag = monthFileTag(newTaskMonth.key, newTaskMonth.label);
 
       const headerMsg =
         `🆕 <b>New Task Added</b>\n` +
-        `<b>By:</b> ${uploader}\n` +
-        `<b>When:</b> ${nowStr}\n` +
-        `<b>Unit:</b> ${t.unit ?? "-"}\n` +
-        `<b>Title:</b> ${t.taskTitle ?? "-"}\n` +
-        `<b>Assignee:</b> ${t.assignee ?? "-"}\n` +
-        `<b>Start:</b> ${t.dateAssigned ?? "-"}\n` +
-        `<b>Due:</b> ${t.dueDate ?? "-"}\n` +
-        `<b>Month:</b> ${newTaskTag}\n\n` +
+        `<b>By:</b> ${esc(trustedUploader)}\n` +
+        `<b>When:</b> ${esc(nowStr)}\n` +
+        `<b>Unit:</b> ${esc(t.unit)}\n` +
+        `<b>Title:</b> ${esc(t.taskTitle)}\n` +
+        `<b>Assignee:</b> ${esc(t.assignee)}\n` +
+        `<b>Start:</b> ${esc(t.dateAssigned)}\n` +
+        `<b>Due:</b> ${esc(t.dueDate)}\n` +
+        `<b>Month:</b> ${esc(newTaskTag)}\n\n` +
         `📊 Backup files (one per month) follow.`;
       await sendMessage(headerMsg);
 
@@ -190,8 +203,8 @@ Deno.serve(async (req) => {
           const filename = `prs-tasks-${tag}.xlsx`;
           const isNewTaskMonth = key === newTaskMonth.key;
           const caption =
-            `📅 <b>${label}</b> ${isNewTaskMonth ? "⭐" : ""}\n` +
-            `<b>Month tag:</b> ${tag}\n` +
+            `📅 <b>${esc(label)}</b> ${isNewTaskMonth ? "⭐" : ""}\n` +
+            `<b>Month tag:</b> ${esc(tag)}\n` +
             `<b>Tasks in file:</b> ${rows.length}`;
           await sendDocument(
             filename,
@@ -208,7 +221,7 @@ Deno.serve(async (req) => {
     }
 
     if (body.type === "file") {
-      const { taskId, attachmentId, uploader } = body;
+      const { taskId, attachmentId } = body;
       const { data: att, error: attErr } = await supabase
         .from("task_attachments")
         .select("*")
@@ -230,11 +243,11 @@ Deno.serve(async (req) => {
       const bytes = new Uint8Array(await fileBlob.arrayBuffer());
       const caption =
         `📎 <b>New File Uploaded</b>\n` +
-        `<b>By:</b> ${uploader ?? "Unknown"}\n` +
-        `<b>When:</b> ${nowStr}\n` +
-        `<b>Task:</b> #${task?.serial_number ?? "-"} — ${task?.task_title ?? "-"}\n` +
-        `<b>Unit:</b> ${task?.unit ?? "-"}\n` +
-        `<b>File:</b> ${att.file_name}`;
+        `<b>By:</b> ${esc(trustedUploader)}\n` +
+        `<b>When:</b> ${esc(nowStr)}\n` +
+        `<b>Task:</b> #${esc(task?.serial_number)} — ${esc(task?.task_title)}\n` +
+        `<b>Unit:</b> ${esc(task?.unit)}\n` +
+        `<b>File:</b> ${esc(att.file_name)}`;
 
       await sendDocument(att.file_name, bytes, caption, att.content_type || "application/octet-stream");
       return new Response(JSON.stringify({ ok: true }), {
@@ -251,7 +264,7 @@ Deno.serve(async (req) => {
 
     if (body.type === "healthcheck") {
       const startedAt = Date.now();
-      const requester = body.uploader ?? caller.email ?? "Unknown";
+      const requester = trustedUploader;
 
       // Counts + latest task
       const { count: taskCount } = await supabase
@@ -299,17 +312,17 @@ Deno.serve(async (req) => {
       const elapsedMs = Date.now() - startedAt;
       const msg =
         `🩺 <b>Telegram Backup Health Check</b>\n` +
-        `<b>By:</b> ${requester}\n` +
-        `<b>When:</b> ${nowStr}\n` +
+        `<b>By:</b> ${esc(requester)}\n` +
+        `<b>When:</b> ${esc(nowStr)}\n` +
         `<b>Tasks in DB:</b> ${taskCount ?? 0}\n` +
         `<b>Attachments in DB:</b> ${attCount ?? 0}\n` +
         (latestTask
-          ? `<b>Latest task:</b> #${latestTask.serial_number} — ${latestTask.task_title} (${latestTask.unit})\n`
+          ? `<b>Latest task:</b> #${esc(latestTask.serial_number)} — ${esc(latestTask.task_title)} (${esc(latestTask.unit)})\n`
           : `<b>Latest task:</b> none\n`) +
         (latestAtt
-          ? `<b>Latest file:</b> ${latestAtt.file_name} (${Math.round(Number(latestAtt.file_size) / 1024)} KB)\n`
+          ? `<b>Latest file:</b> ${esc(latestAtt.file_name)} (${Math.round(Number(latestAtt.file_size) / 1024)} KB)\n`
           : `<b>Latest file:</b> none\n`) +
-        `<b>Storage download:</b> ${storageOk ? "OK" : `FAIL (${storageError})`}\n` +
+        `<b>Storage download:</b> ${storageOk ? "OK" : `FAIL (${esc(storageError)})`}\n` +
         `<b>Round-trip:</b> ${elapsedMs} ms`;
       await sendMessage(msg);
 

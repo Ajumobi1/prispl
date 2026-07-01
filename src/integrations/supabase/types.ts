@@ -56,14 +56,33 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_recovery: {
+        Row: {
+          security_answer: string
+          security_question: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          security_answer?: string
+          security_question?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          security_answer?: string
+          security_question?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
           department: string
           full_name: string
           id: string
-          security_answer: string
-          security_question: string
           status: Database["public"]["Enums"]["account_status"]
           updated_at: string
           user_id: string
@@ -74,8 +93,6 @@ export type Database = {
           department?: string
           full_name?: string
           id?: string
-          security_answer?: string
-          security_question?: string
           status?: Database["public"]["Enums"]["account_status"]
           updated_at?: string
           user_id: string
@@ -86,8 +103,6 @@ export type Database = {
           department?: string
           full_name?: string
           id?: string
-          security_answer?: string
-          security_question?: string
           status?: Database["public"]["Enums"]["account_status"]
           updated_at?: string
           user_id?: string

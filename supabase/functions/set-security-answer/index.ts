@@ -58,21 +58,22 @@ Deno.serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
 
-    // Only allow setting if it has not been set yet (registration-only path)
-    const { data: profile, error: readError } = await admin
-      .from("profiles")
+    // Only allow setting if it has not been set yet (registration-only path).
+    // Recovery data lives in a separate table with no client RLS access.
+    const { data: recovery, error: readError } = await admin
+      .from("profile_recovery")
       .select("user_id, security_answer")
       .eq("user_id", userId)
       .maybeSingle();
 
-    if (readError || !profile) {
+    if (readError) {
       return new Response(JSON.stringify({ error: "Profile not found." }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (profile.security_answer && profile.security_answer.length > 0) {
+    if (recovery?.security_answer && recovery.security_answer.length > 0) {
       return new Response(JSON.stringify({ error: "Security answer already set." }), {
         status: 409,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -82,9 +83,8 @@ Deno.serve(async (req) => {
     const hashed = await hashAnswer(securityAnswer);
 
     const { error: updateError } = await admin
-      .from("profiles")
-      .update({ security_question: securityQuestion, security_answer: hashed })
-      .eq("user_id", userId);
+      .from("profile_recovery")
+      .upsert({ user_id: userId, security_question: securityQuestion, security_answer: hashed }, { onConflict: "user_id" });
 
     if (updateError) {
       return new Response(JSON.stringify({ error: updateError.message }), {
