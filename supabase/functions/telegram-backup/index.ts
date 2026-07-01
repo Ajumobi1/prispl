@@ -221,7 +221,7 @@ Deno.serve(async (req) => {
     }
 
     if (body.type === "file") {
-      const { taskId, attachmentId, uploader } = body;
+      const { taskId, attachmentId } = body;
       const { data: att, error: attErr } = await supabase
         .from("task_attachments")
         .select("*")
@@ -243,11 +243,11 @@ Deno.serve(async (req) => {
       const bytes = new Uint8Array(await fileBlob.arrayBuffer());
       const caption =
         `📎 <b>New File Uploaded</b>\n` +
-        `<b>By:</b> ${uploader ?? "Unknown"}\n` +
-        `<b>When:</b> ${nowStr}\n` +
-        `<b>Task:</b> #${task?.serial_number ?? "-"} — ${task?.task_title ?? "-"}\n` +
-        `<b>Unit:</b> ${task?.unit ?? "-"}\n` +
-        `<b>File:</b> ${att.file_name}`;
+        `<b>By:</b> ${esc(trustedUploader)}\n` +
+        `<b>When:</b> ${esc(nowStr)}\n` +
+        `<b>Task:</b> #${esc(task?.serial_number)} — ${esc(task?.task_title)}\n` +
+        `<b>Unit:</b> ${esc(task?.unit)}\n` +
+        `<b>File:</b> ${esc(att.file_name)}`;
 
       await sendDocument(att.file_name, bytes, caption, att.content_type || "application/octet-stream");
       return new Response(JSON.stringify({ ok: true }), {
