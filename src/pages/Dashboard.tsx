@@ -34,6 +34,7 @@ import ondoLogo from "@/assets/ondo-state-logo.png";
 import odchcLogo from "@/assets/odchc-logo.png";
 import UserMenu from "@/components/UserMenu";
 import TaskAnalyticsCard from "@/components/TaskAnalyticsCard";
+import OnboardingTour from "@/components/OnboardingTour";
 
 const statusVariant: Record<TaskStatus, "secondary" | "default" | "destructive" | "outline"> = {
   "Not Started": "secondary",
