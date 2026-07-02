@@ -146,6 +146,7 @@ export default function DashboardPage() {
           <nav className="hidden md:flex items-center gap-2">
             <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" asChild><Link to="/task-tracker">Unit Tracker</Link></Button>
             {isAdmin && <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" asChild><Link to="/account-admin">Manage Accounts</Link></Button>}
+            <OnboardingTour />
             <UserMenu variant="header" />
           </nav>
 
