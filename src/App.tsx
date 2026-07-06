@@ -78,7 +78,9 @@ const App = () => (
                   </RequireAuth>
                 }
               />
+              <Route path="/.lovable/oauth/consent" element={<OAuthConsentPage />} />
               <Route path="*" element={<NotFound />} />
+
             </Routes>
           </Suspense>
         </AuthProvider>
