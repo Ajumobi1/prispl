@@ -15,6 +15,7 @@ const DashboardPage = lazy(() => import("./pages/Dashboard"));
 const AccountAdminPage = lazy(() => import("./pages/AccountAdmin"));
 const ProfilePage = lazy(() => import("./pages/Profile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const OAuthConsentPage = lazy(() => import("./pages/OAuthConsent"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -77,7 +78,9 @@ const App = () => (
                   </RequireAuth>
                 }
               />
+              <Route path="/.lovable/oauth/consent" element={<OAuthConsentPage />} />
               <Route path="*" element={<NotFound />} />
+
             </Routes>
           </Suspense>
         </AuthProvider>
