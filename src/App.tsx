@@ -15,6 +15,7 @@ const DashboardPage = lazy(() => import("./pages/Dashboard"));
 const AccountAdminPage = lazy(() => import("./pages/AccountAdmin"));
 const ProfilePage = lazy(() => import("./pages/Profile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const OAuthConsentPage = lazy(() => import("./pages/OAuthConsent"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
