@@ -40,8 +40,9 @@ const UNIT_COLORS: Record<string, string> = {
 const STATUS_COLORS: Record<string, string> = {
   "Not Started": "hsl(var(--muted-foreground))",
   "In Progress": "hsl(var(--primary))",
+  "Awaiting Review": "hsl(var(--secondary))",
   Completed: "hsl(142 71% 45%)",
-  Blocked: "hsl(var(--destructive))",
+  Delayed: "hsl(var(--destructive))",
 };
 const PRIORITY_COLORS: Record<string, string> = {
   Low: "hsl(142 71% 45%)",
