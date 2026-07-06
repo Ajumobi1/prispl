@@ -1,0 +1,208 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://cbuulmpemweaaymwdqfp.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "prs-platform-mcp",
+      "version": "0.1.0",
+      "title": "PR&S Platform MCP"
+    },
+    "tools": [
+      {
+        "name": "whoami",
+        "title": "Who am I",
+        "description": "Return the signed-in user's profile (username, full name, role, department).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_tasks",
+        "title": "List tasks",
+        "description": "List PR&S tasks visible to the signed-in user. Optionally filter by status, unit, or assignee.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "status": {
+              "description": "Filter by task status.",
+              "type": "string",
+              "enum": [
+                "Not Started",
+                "In Progress",
+                "Awaiting Review",
+                "Completed",
+                "Delayed"
+              ]
+            },
+            "unit": {
+              "description": "Filter by unit.",
+              "type": "string",
+              "enum": [
+                "Planning",
+                "Research",
+                "Statistics",
+                "M&E"
+              ]
+            },
+            "assignee": {
+              "description": "Filter by assignee name (exact match).",
+              "type": "string"
+            },
+            "limit": {
+              "description": "Max rows to return (default 50).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_task",
+        "title": "Create task",
+        "description": "Create a new PR&S task owned by the signed-in user.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "unit": {
+              "type": "string",
+              "enum": [
+                "Planning",
+                "Research",
+                "Statistics",
+                "M&E"
+              ]
+            },
+            "task_title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "task_description": {
+              "default": "",
+              "type": "string"
+            },
+            "assignee": {
+              "type": "string",
+              "minLength": 1
+            },
+            "date_assigned": {
+              "type": "string",
+              "description": "ISO date (YYYY-MM-DD)."
+            },
+            "due_date": {
+              "type": "string",
+              "description": "ISO date (YYYY-MM-DD)."
+            },
+            "status": {
+              "default": "Not Started",
+              "type": "string",
+              "enum": [
+                "Not Started",
+                "In Progress",
+                "Awaiting Review",
+                "Completed",
+                "Delayed"
+              ]
+            },
+            "priority": {
+              "default": "Medium",
+              "type": "string",
+              "enum": [
+                "Urgent/High",
+                "Medium",
+                "Low"
+              ]
+            },
+            "deliverable": {
+              "default": "",
+              "type": "string"
+            },
+            "checklist": {
+              "default": "",
+              "type": "string"
+            },
+            "remarks": {
+              "default": "",
+              "type": "string"
+            }
+          },
+          "required": [
+            "unit",
+            "task_title",
+            "assignee",
+            "date_assigned",
+            "due_date"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_task_status",
+        "title": "Update task status",
+        "description": "Change the status of a PR&S task by ID.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "task_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Task UUID."
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "Not Started",
+                "In Progress",
+                "Awaiting Review",
+                "Completed",
+                "Delayed"
+              ]
+            }
+          },
+          "required": [
+            "task_id",
+            "status"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
