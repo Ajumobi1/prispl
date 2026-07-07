@@ -2,7 +2,7 @@
 
 Manual verification that the installed PWA loads key pages without a network
 connection. Complements the automated Playwright check in
-`src/test/offline-shell.spec.ts`.
+`tests/offline-shell.spec.ts`.
 
 ## Prerequisites
 
@@ -13,7 +13,7 @@ connection. Complements the automated Playwright check in
 ## Automated check
 
 ```bash
-bunx playwright test src/test/offline-shell.spec.ts
+bunx playwright test tests/offline-shell.spec.ts
 ```
 
 The test warms the app shell online, installs a cache-first worker, goes
