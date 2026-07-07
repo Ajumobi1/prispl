@@ -1,0 +1,21 @@
+{
+  "name": "PR&S Unit Platform",
+  "short_name": "PR&S Platform",
+  "description": "PR&S Unit task tracking, dashboards, and team management for the Ondo State Contributory Health Commission.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1565a8",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
