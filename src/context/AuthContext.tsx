@@ -37,9 +37,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Subscribe to auth state changes — don't call async APIs from inside the callback
     // (Supabase docs: defer with setTimeout to avoid deadlocks).
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, sess) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, sess) => {
       if (!sess) {
         setSession(null);
+        // Redirect on expired/invalid tokens so user isn't stuck on a broken protected page.
+        if (event === "TOKEN_REFRESHED" || event === "SIGNED_OUT") {
+          const path = window.location.pathname;
+          const isPublic = ["/login", "/register", "/forgot-password"].some((p) => path.startsWith(p));
+          if (event === "SIGNED_OUT" && !isPublic) {
+            const next = encodeURIComponent(path + window.location.search);
+            window.location.assign(`/login?next=${next}`);
+          }
+        }
         return;
       }
       setTimeout(() => {
