@@ -6,6 +6,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/context/AuthContext";
 import RequireAuth from "@/components/RequireAuth";
+import OfflineIndicator from "@/components/OfflineIndicator";
+import PageSkeleton from "@/components/PageSkeleton";
 
 const LoginPage = lazy(() => import("./pages/Login"));
 const RegisterPage = lazy(() => import("./pages/Register"));
@@ -27,20 +29,15 @@ const queryClient = new QueryClient({
   },
 });
 
-const PageFallback = () => (
-  <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-    Loading...
-  </div>
-);
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <OfflineIndicator />
       <Toaster />
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Suspense fallback={<PageFallback />}>
+          <Suspense fallback={<PageSkeleton />}>
             <Routes>
               <Route path="/" element={<Navigate to="/task-tracker" replace />} />
               <Route path="/login" element={<LoginPage />} />

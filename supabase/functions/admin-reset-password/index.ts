@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.0";
+import { rateLimit, clientKey, rateLimitResponse } from "../_shared/rateLimit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,6 +12,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const rl = rateLimit({ key: clientKey(req, "admin-reset-password"), limit: 10, windowMs: 60_000 });
+  if (!rl.ok) return rateLimitResponse(rl, corsHeaders);
 
   try {
     const authHeader = req.headers.get("Authorization");

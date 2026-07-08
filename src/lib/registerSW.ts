@@ -42,7 +42,7 @@ async function unregisterAppSW(): Promise<void> {
   }
 }
 
-export function registerServiceWorker(): void {
+export function registerServiceWorker(onUpdateAvailable?: () => void): void {
   if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
 
   if (isRefusedContext()) {
@@ -51,8 +51,23 @@ export function registerServiceWorker(): void {
   }
 
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register(SW_URL, { scope: "/" }).catch((err) => {
-      console.warn("Service worker registration failed:", err);
-    });
+    navigator.serviceWorker
+      .register(SW_URL, { scope: "/" })
+      .then((reg) => {
+        const notify = (worker: ServiceWorker | null) => {
+          if (!worker) return;
+          worker.addEventListener("statechange", () => {
+            if (worker.state === "installed" && navigator.serviceWorker.controller) {
+              onUpdateAvailable?.();
+            }
+          });
+        };
+        if (reg.waiting && navigator.serviceWorker.controller) onUpdateAvailable?.();
+        notify(reg.installing);
+        reg.addEventListener("updatefound", () => notify(reg.installing));
+      })
+      .catch((err) => {
+        console.warn("Service worker registration failed:", err);
+      });
   });
 }
