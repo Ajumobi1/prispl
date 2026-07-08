@@ -18,7 +18,15 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("Application error:", error, info.componentStack);
+    // Structured log so it's easy to grep in browser logs / future error sink.
+    console.error("[ErrorBoundary]", {
+      message: error.message,
+      stack: error.stack,
+      componentStack: info.componentStack,
+      url: typeof window !== "undefined" ? window.location.href : undefined,
+      userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   reset = () => {
