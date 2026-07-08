@@ -46,7 +46,7 @@ function groupByMonth(tasks: PRSTask[]): Map<string, { label: string; tasks: PRS
   return new Map([...groups.entries()].sort());
 }
 
-function safeSheetName(name: string): string {
+export function safeSheetName(name: string): string {
   return name.replace(/[\\/?*[\]:]/g, "_").slice(0, 31);
 }
 
