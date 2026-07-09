@@ -1,5 +1,6 @@
 import { Component, ErrorInfo, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { reportClientError } from "@/lib/errorSink";
 
 interface Props {
   children: ReactNode;
@@ -18,7 +19,7 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // Structured log so it's easy to grep in browser logs / future error sink.
+    // Structured log so it's easy to grep in browser logs.
     console.error("[ErrorBoundary]", {
       message: error.message,
       stack: error.stack,
@@ -26,6 +27,13 @@ export default class ErrorBoundary extends Component<Props, State> {
       url: typeof window !== "undefined" ? window.location.href : undefined,
       userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
       timestamp: new Date().toISOString(),
+    });
+    // Persist to backend so admins can review crashes.
+    reportClientError({
+      source: "error-boundary",
+      message: error.message,
+      stack: error.stack,
+      componentStack: info.componentStack ?? undefined,
     });
   }
 
