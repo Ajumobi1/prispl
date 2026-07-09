@@ -56,6 +56,45 @@ export type Database = {
         }
         Relationships: []
       }
+      client_errors: {
+        Row: {
+          component_stack: string | null
+          context: Json | null
+          created_at: string
+          id: string
+          message: string
+          source: string
+          stack: string | null
+          url: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          component_stack?: string | null
+          context?: Json | null
+          created_at?: string
+          id?: string
+          message: string
+          source?: string
+          stack?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          component_stack?: string | null
+          context?: Json | null
+          created_at?: string
+          id?: string
+          message?: string
+          source?: string
+          stack?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profile_recovery: {
         Row: {
           security_answer: string
