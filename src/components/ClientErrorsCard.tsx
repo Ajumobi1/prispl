@@ -157,7 +157,8 @@ export default function ClientErrorsCard() {
                       </TableCell>
                     </TableRow>
                   )}
-                </>
+                  {expanded !== e.id && null}
+                </Fragment>
               ))}
             </TableBody>
           </Table>
