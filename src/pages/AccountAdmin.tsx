@@ -27,6 +27,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import UserMenu from "@/components/UserMenu";
 import TaskAnalyticsCard from "@/components/TaskAnalyticsCard";
+import ClientErrorsCard from "@/components/ClientErrorsCard";
 
 const orderedStatus: AccountStatus[] = ["pending", "approved", "locked", "declined"];
 
@@ -338,6 +339,9 @@ export default function AccountAdminPage() {
             )}
           </CardContent>
         </Card>
+
+        <ClientErrorsCard />
+
 
         {isLoading ? (
           <p className="text-center text-muted-foreground">Loading users...</p>
