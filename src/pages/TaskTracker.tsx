@@ -39,13 +39,14 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
-  createTask,
+  createTaskOrQueue,
+  TaskQueuedOfflineError,
   deleteTaskAttachment,
   downloadTasks,
   fetchTaskAttachments,
   fetchTasks,
   downloadAttachment,
-  
+
   TaskAttachment,
   updateTask,
   uploadTaskAttachments,
