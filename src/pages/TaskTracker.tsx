@@ -247,7 +247,7 @@ export default function TaskTrackerPage() {
       setIsBusy(true);
       setError(null);
       const joinedAssignees = selectedAssignees.join(", ");
-      const createdTask = await createTask({
+      const createdTask = await createTaskOrQueue({
         unit: form.unit as UnitName,
         taskTitle: normalizedTaskTitle,
         taskDescription: form.taskDescription.trim() || normalizedTaskTitle,
