@@ -100,8 +100,8 @@ export default function ClientErrorsCard() {
             </TableHeader>
             <TableBody>
               {errors.map((e) => (
-                <>
-                  <TableRow key={e.id}>
+                <Fragment key={e.id}>
+                  <TableRow>
                     <TableCell className="whitespace-nowrap text-xs">
                       {new Date(e.created_at).toLocaleString()}
                     </TableCell>
