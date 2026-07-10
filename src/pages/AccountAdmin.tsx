@@ -340,6 +340,9 @@ export default function AccountAdminPage() {
           </CardContent>
         </Card>
 
+        <ClientErrorsCard />
+
+
         {isLoading ? (
           <p className="text-center text-muted-foreground">Loading users...</p>
         ) : (
