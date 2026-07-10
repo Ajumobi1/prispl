@@ -131,10 +131,10 @@ export async function drainOutbox(): Promise<{ succeeded: number; failed: number
   try {
     const queued = await listQueued();
     if (queued.length === 0) return { succeeded, failed };
-    const { createTaskDirect } = await import("./api");
+    const { createTask } = await import("./api");
     for (const entry of queued) {
       try {
-        await createTaskDirect(entry.payload);
+        await createTask(entry.payload);
         await removeQueued(entry.id);
         succeeded++;
       } catch (err) {
