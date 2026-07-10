@@ -142,6 +142,43 @@ export async function createTask(payload: CreateTaskPayload): Promise<PRSTask> {
   return task;
 }
 
+export class TaskQueuedOfflineError extends Error {
+  constructor() {
+    super("You are offline — task queued and will save when you reconnect.");
+    this.name = "TaskQueuedOfflineError";
+  }
+}
+
+function looksLikeNetworkError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const msg = err.message.toLowerCase();
+  return msg.includes("failed to fetch") ||
+    msg.includes("network") ||
+    msg.includes("networkerror") ||
+    msg.includes("load failed");
+}
+
+/**
+ * Create a task, or persist it to the offline outbox if the network is down.
+ * Throws TaskQueuedOfflineError when queued so the caller can surface a distinct message.
+ */
+export async function createTaskOrQueue(payload: CreateTaskPayload): Promise<PRSTask> {
+  const { queueCreateTask } = await import("./offlineOutbox");
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    await queueCreateTask(payload);
+    throw new TaskQueuedOfflineError();
+  }
+  try {
+    return await createTask(payload);
+  } catch (err) {
+    if (looksLikeNetworkError(err)) {
+      await queueCreateTask(payload);
+      throw new TaskQueuedOfflineError();
+    }
+    throw err;
+  }
+}
+
 export async function updateTask(taskId: string, payload: CreateTaskPayload): Promise<PRSTask> {
   const { data, error } = await supabase
     .from("tasks")

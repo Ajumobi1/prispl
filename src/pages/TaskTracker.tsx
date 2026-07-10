@@ -39,13 +39,14 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
-  createTask,
+  createTaskOrQueue,
+  TaskQueuedOfflineError,
   deleteTaskAttachment,
   downloadTasks,
   fetchTaskAttachments,
   fetchTasks,
   downloadAttachment,
-  
+
   TaskAttachment,
   updateTask,
   uploadTaskAttachments,
@@ -246,7 +247,7 @@ export default function TaskTrackerPage() {
       setIsBusy(true);
       setError(null);
       const joinedAssignees = selectedAssignees.join(", ");
-      const createdTask = await createTask({
+      const createdTask = await createTaskOrQueue({
         unit: form.unit as UnitName,
         taskTitle: normalizedTaskTitle,
         taskDescription: form.taskDescription.trim() || normalizedTaskTitle,
@@ -289,12 +290,25 @@ export default function TaskTrackerPage() {
         setUploadQueue([]);
       }
     } catch (err) {
-      const raw = err instanceof Error ? err.message : "Failed to create task.";
-      const friendly = raw.includes("duplicate_task")
-        ? "This task was just created moments ago. Refresh to see it — no duplicate was saved."
-        : raw;
-      setError(friendly);
-      toast.error(friendly);
+      if (err instanceof TaskQueuedOfflineError) {
+        toast.success("Offline — task saved locally and will sync when you reconnect.");
+        // Reset form so the user can move on; queued item will replay via outbox.
+        setForm({
+          unit: "Planning", taskTitle: "", taskDescription: "", assignee: "",
+          dateAssigned: monthStartDefault, dueDate: monthStartDefault,
+          status: "Not Started", priority: "Medium", deliverable: "", checklist: "", remarks: "",
+        });
+        setSelectedAssignees([]);
+        setAssigneeInput("");
+        setUploadQueue([]);
+      } else {
+        const raw = err instanceof Error ? err.message : "Failed to create task.";
+        const friendly = raw.includes("duplicate_task")
+          ? "This task was just created moments ago. Refresh to see it — no duplicate was saved."
+          : raw;
+        setError(friendly);
+        toast.error(friendly);
+      }
     } finally {
       setIsBusy(false);
       submitLockRef.current = false;
