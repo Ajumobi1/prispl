@@ -470,6 +470,7 @@ export default function TaskTrackerPage() {
               <DropdownMenuLabel>Menu</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild><Link to="/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" />Dashboard</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/vault"><LayoutDashboard className="mr-2 h-4 w-4" />Data Vault</Link></DropdownMenuItem>
               <DropdownMenuItem onClick={() => setViewMode("table")}><TableIcon className="mr-2 h-4 w-4" />Table view</DropdownMenuItem>
               <DropdownMenuItem onClick={() => setViewMode("kanban")}><Columns3 className="mr-2 h-4 w-4" />Kanban view</DropdownMenuItem>
             </DropdownMenuContent>
