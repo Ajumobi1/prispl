@@ -99,7 +99,7 @@ function FilesTab() {
     finally { setUploading(false); }
   }
 
-  const canDelete = (r: VaultFile) => r.uploaded_by === session?.user?.id || session?.role === "admin";
+  const canDelete = (r: VaultFile) => r.uploaded_by === session?.id || session?.role === "admin";
 
   return (
     <Card className="mt-4">
@@ -214,7 +214,7 @@ function NotesTab() {
     } catch (e) { toast.error((e as Error).message); }
   }
 
-  const canEdit = (n: VaultNote) => n.created_by === session?.user?.id || session?.role === "admin";
+  const canEdit = (n: VaultNote) => n.created_by === session?.id || session?.role === "admin";
 
   return (
     <Card className="mt-4">
@@ -319,7 +319,7 @@ function RecordsTab() {
     } catch (e) { toast.error((e as Error).message); }
   }
 
-  const canEdit = (r: VaultRecord) => r.created_by === session?.user?.id || session?.role === "admin";
+  const canEdit = (r: VaultRecord) => r.created_by === session?.id || session?.role === "admin";
 
   return (
     <Card className="mt-4">
