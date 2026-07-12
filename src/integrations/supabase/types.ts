@@ -265,6 +265,102 @@ export type Database = {
         }
         Relationships: []
       }
+      vault_files: {
+        Row: {
+          content_type: string
+          created_at: string
+          description: string
+          file_name: string
+          file_path: string
+          file_size: number
+          folder: string
+          id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          content_type?: string
+          created_at?: string
+          description?: string
+          file_name: string
+          file_path: string
+          file_size?: number
+          folder?: string
+          id?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          description?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          folder?: string
+          id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
+      vault_notes: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          tags: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          tags?: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          tags?: string[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      vault_records: {
+        Row: {
+          collection: string
+          created_at: string
+          created_by: string | null
+          data: Json
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          collection: string
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          collection?: string
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
