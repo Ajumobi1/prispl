@@ -224,6 +224,8 @@ function NotesTab() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [tagsText, setTagsText] = useState("");
+  const [query, setQuery] = useState("");
+  const [activeTag, setActiveTag] = useState("");
 
   async function refresh() {
     setLoading(true);
@@ -231,6 +233,17 @@ function NotesTab() {
     finally { setLoading(false); }
   }
   useEffect(() => { refresh(); }, []);
+
+  const allTags = useMemo(() => Array.from(new Set(rows.flatMap(r => r.tags))).sort(), [rows]);
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return rows.filter((n) => {
+      if (activeTag && !n.tags.includes(activeTag)) return false;
+      if (!q) return true;
+      return `${n.title} ${n.content} ${n.tags.join(" ")}`.toLowerCase().includes(q);
+    });
+  }, [rows, query, activeTag]);
+
 
   function openNew() { setEditing(null); setTitle(""); setContent(""); setTagsText(""); setOpen(true); }
   function openEdit(n: VaultNote) { setEditing(n); setTitle(n.title); setContent(n.content); setTagsText(n.tags.join(", ")); setOpen(true); }
