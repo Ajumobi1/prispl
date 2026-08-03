@@ -348,6 +348,16 @@ function RecordsTab() {
   const [collection, setCollection] = useState("");
   const [title, setTitle] = useState("");
   const [fields, setFields] = useState<{ key: string; value: string }[]>([{ key: "", value: "" }]);
+  const [query, setQuery] = useState("");
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((r) =>
+      `${r.title} ${r.collection} ${JSON.stringify(r.data ?? {})}`.toLowerCase().includes(q)
+    );
+  }, [rows, query]);
+
 
   async function refresh() {
     setLoading(true);
