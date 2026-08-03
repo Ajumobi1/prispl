@@ -737,7 +737,13 @@ export default function TaskTrackerPage() {
                                   <Button size="sm" variant="ghost" onClick={cancelEditTask}>Cancel</Button>
                                 </div>
                               ) : (
-                                <Button size="sm" variant="ghost" onClick={() => beginEditTask(task)}>Edit</Button>
+                                <div className="flex gap-1">
+                                  <Button size="sm" variant="ghost" onClick={() => beginEditTask(task)}>Edit</Button>
+                                  {canTrash(task) && (
+                                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => onTrashTask(task)}>Trash</Button>
+                                  )}
+                                </div>
+
                               )}
                               {attachments.length > 0 && (
                                 <Collapsible>
