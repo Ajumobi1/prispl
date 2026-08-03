@@ -197,6 +197,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           date_assigned: string
+          deleted_at: string | null
+          deleted_by: string | null
           deliverable: string
           due_date: string
           id: string
@@ -215,6 +217,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           date_assigned?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           deliverable?: string
           due_date?: string
           id?: string
@@ -233,6 +237,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           date_assigned?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           deliverable?: string
           due_date?: string
           id?: string
