@@ -55,6 +55,8 @@ import {
   uploadTaskAttachments,
 } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import KanbanBoard from "@/components/tasks/KanbanBoard";
+import TrashView from "@/components/tasks/TrashView";
 
 import { PRSTask, TaskPriority, TaskStatus, statusColumns, UnitName } from "@/lib/task-types";
 
