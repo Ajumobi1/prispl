@@ -503,6 +503,8 @@ export default function TaskTrackerPage() {
             <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" asChild><Link to="/vault">Vault</Link></Button>
             <Button variant={viewMode === "table" ? "secondary" : "ghost"} size="sm" className={viewMode !== "table" ? "text-primary-foreground hover:bg-primary-foreground/10" : ""} onClick={() => setViewMode("table")}>Table</Button>
             <Button variant={viewMode === "kanban" ? "secondary" : "ghost"} size="sm" className={viewMode !== "kanban" ? "text-primary-foreground hover:bg-primary-foreground/10" : ""} onClick={() => setViewMode("kanban")} disabled={isBusy}>Kanban</Button>
+            <Button variant={viewMode === "trash" ? "secondary" : "ghost"} size="sm" className={viewMode !== "trash" ? "text-primary-foreground hover:bg-primary-foreground/10" : ""} onClick={() => { setViewMode("trash"); loadTrash(); }}>Trash</Button>
+
             <UserMenu variant="header" />
 
           </nav>
