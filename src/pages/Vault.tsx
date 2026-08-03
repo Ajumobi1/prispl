@@ -265,12 +265,30 @@ function NotesTab() {
         <CardTitle>Notes</CardTitle>
         <Button size="sm" onClick={openNew}><Plus className="mr-2 h-4 w-4" />New note</Button>
       </CardHeader>
-      <CardContent>
-        {loading ? <p className="text-sm text-muted-foreground">Loading...</p> : rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No notes yet.</p>
+      <CardContent className="space-y-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input className="pl-9" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search notes by title, content or tag" />
+        </div>
+        {allTags.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-muted-foreground">Tags:</span>
+            <Badge variant={!activeTag ? "default" : "outline"} onClick={() => setActiveTag("")} className="cursor-pointer">All</Badge>
+            {allTags.map(t => (
+              <Badge key={t} variant={activeTag === t ? "default" : "outline"} onClick={() => setActiveTag(t)} className="cursor-pointer">{t}</Badge>
+            ))}
+          </div>
+        )}
+        {loading ? <p className="text-sm text-muted-foreground">Loading...</p> : visible.length === 0 ? (
+          <EmptyState
+            icon={NotebookPen}
+            title={rows.length === 0 ? "No notes yet" : "No matching notes"}
+            hint={rows.length === 0 ? "Capture meeting notes, references or checklists — tag them so the team can find them fast." : "Try a different search term or clear the tag filter."}
+          />
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {rows.map((n) => (
+            {visible.map((n) => (
+
               <Card key={n.id}>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base">{n.title}</CardTitle>
