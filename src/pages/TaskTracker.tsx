@@ -45,14 +45,19 @@ import {
   downloadTasks,
   fetchTaskAttachments,
   fetchTasks,
+  fetchDeletedTasks,
+  softDeleteTask,
+  restoreTask,
   downloadAttachment,
 
   TaskAttachment,
   updateTask,
   uploadTaskAttachments,
 } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 import { PRSTask, TaskPriority, TaskStatus, statusColumns, UnitName } from "@/lib/task-types";
+
 
 const priorities: TaskPriority[] = ["Urgent/High", "Medium", "Low"];
 
