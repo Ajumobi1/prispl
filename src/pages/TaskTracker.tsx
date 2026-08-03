@@ -75,13 +75,17 @@ const statusVariant: Record<TaskStatus, "secondary" | "default" | "destructive" 
   Delayed: "destructive",
 };
 
-type ViewMode = "table" | "kanban";
+type ViewMode = "table" | "kanban" | "trash";
 
 export default function TaskTrackerPage() {
   const navigate = useNavigate();
+  const { session } = useAuth();
   const [authChecked, setAuthChecked] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [tasks, setTasks] = useState<PRSTask[]>([]);
+  const [trashedTasks, setTrashedTasks] = useState<PRSTask[]>([]);
+  const [trashLoading, setTrashLoading] = useState(false);
+
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [customMonths, setCustomMonths] = useState<string[]>([]);
   const [closedMonths, setClosedMonths] = useState<string[]>([]);
