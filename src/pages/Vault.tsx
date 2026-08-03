@@ -76,6 +76,7 @@ function FilesTab() {
   const [description, setDescription] = useState("");
   const [uploading, setUploading] = useState(false);
   const [filterFolder, setFilterFolder] = useState("");
+  const [query, setQuery] = useState("");
 
   async function refresh() {
     setLoading(true);
@@ -85,7 +86,15 @@ function FilesTab() {
   useEffect(() => { refresh(); }, []);
 
   const folders = useMemo(() => Array.from(new Set(rows.map(r => r.folder).filter(Boolean))).sort(), [rows]);
-  const visible = filterFolder ? rows.filter(r => r.folder === filterFolder) : rows;
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return rows.filter((r) => {
+      if (filterFolder && r.folder !== filterFolder) return false;
+      if (!q) return true;
+      return `${r.file_name} ${r.description} ${r.folder}`.toLowerCase().includes(q);
+    });
+  }, [rows, filterFolder, query]);
+
 
   async function handleUpload() {
     if (!file) return;
