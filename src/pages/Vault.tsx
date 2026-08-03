@@ -17,7 +17,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Download, FileText, FolderOpen, NotebookPen, Plus, Trash2, Upload, Database, Pencil } from "lucide-react";
+import { Download, FileText, FolderOpen, NotebookPen, Plus, Trash2, Upload, Database, Pencil, Search, type LucideIcon } from "lucide-react";
 import SEO from "@/components/SEO";
 
 function formatBytes(n: number) {
@@ -29,6 +29,17 @@ function formatBytes(n: number) {
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleString();
 }
+
+function EmptyState({ icon: Icon, title, hint }: { icon: LucideIcon; title: string; hint: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-md border border-dashed py-10 text-center">
+      <Icon className="mb-3 h-8 w-8 text-muted-foreground" />
+      <p className="font-medium text-foreground">{title}</p>
+      <p className="mt-1 max-w-sm text-sm text-muted-foreground">{hint}</p>
+    </div>
+  );
+}
+
 
 export default function VaultPage() {
   return (
