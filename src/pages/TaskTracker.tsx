@@ -523,6 +523,8 @@ export default function TaskTrackerPage() {
               <DropdownMenuItem asChild><Link to="/vault"><LayoutDashboard className="mr-2 h-4 w-4" />Data Vault</Link></DropdownMenuItem>
               <DropdownMenuItem onClick={() => setViewMode("table")}><TableIcon className="mr-2 h-4 w-4" />Table view</DropdownMenuItem>
               <DropdownMenuItem onClick={() => setViewMode("kanban")}><Columns3 className="mr-2 h-4 w-4" />Kanban view</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setViewMode("trash"); loadTrash(); }}><Trash2 className="mr-2 h-4 w-4" />Trash</DropdownMenuItem>
+
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
