@@ -23,6 +23,8 @@ export interface PRSTask {
   deliverable: string;
   checklist: string;
   remarks: string;
+  createdBy?: string | null;
+  deletedAt?: string | null;
 }
 
 export const statusColumns: TaskStatus[] = [
