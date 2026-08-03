@@ -811,76 +811,20 @@ export default function TaskTrackerPage() {
 
         {/* Kanban View */}
         {viewMode === "kanban" && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {statusColumns.map((status) => (
-              <Card key={status}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">{status}</CardTitle>
-                  <CardDescription>{(groupedByStatus[status] ?? []).length} tasks</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {(groupedByStatus[status] ?? []).map((task) => (
-                    <div key={getTaskKey(task)} className="rounded-md border bg-card p-2 text-sm">
-                      <div className="font-medium text-foreground">{task.taskTitle}</div>
-                      <div className="text-xs text-muted-foreground">{task.unit} · {task.assignee}</div>
-                      <span className={`mt-1 inline-block rounded-full border px-2 py-0.5 text-xs ${priorityClasses[task.priority]}`}>{task.priority}</span>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <KanbanBoard groupedByStatus={groupedByStatus} getTaskKey={getTaskKey} />
         )}
 
         {/* Trash View */}
         {viewMode === "trash" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Trash</CardTitle>
-              <CardDescription>Deleted tasks are kept here. Creators and admins can restore them.</CardDescription>
-            </CardHeader>
-            <CardContent className="overflow-x-auto">
-              {trashLoading ? (
-                <p className="text-sm text-muted-foreground">Loading trash…</p>
-              ) : trashedTasks.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Trash is empty.</p>
-              ) : (
-                <Table className="min-w-[720px]">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>S/N</TableHead>
-                      <TableHead>Task</TableHead>
-                      <TableHead>Unit</TableHead>
-                      <TableHead>Assignee</TableHead>
-                      <TableHead>Deleted</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {trashedTasks.map((task) => (
-                      <TableRow key={getTaskKey(task)}>
-                        <TableCell>{task.serialNumber}</TableCell>
-                        <TableCell className="font-medium">{task.taskTitle}</TableCell>
-                        <TableCell>{task.unit}</TableCell>
-                        <TableCell>{task.assignee}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {task.deletedAt ? new Date(task.deletedAt).toLocaleString() : "—"}
-                        </TableCell>
-                        <TableCell>
-                          {canTrash(task) ? (
-                            <Button size="sm" variant="outline" onClick={() => onRestoreTask(task)}>Restore</Button>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">No access</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+          <TrashView
+            tasks={trashedTasks}
+            loading={trashLoading}
+            canRestore={canTrash}
+            onRestore={onRestoreTask}
+            getTaskKey={getTaskKey}
+          />
         )}
+
 
       </main>
     </div>
