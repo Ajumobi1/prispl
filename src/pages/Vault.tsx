@@ -399,6 +399,10 @@ function RecordsTab() {
         <Button size="sm" onClick={openNew}><Plus className="mr-2 h-4 w-4" />New record</Button>
       </CardHeader>
       <CardContent className="space-y-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input className="pl-9" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search records by title, collection or field value" />
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-muted-foreground">Collections:</span>
           <Badge variant={!activeCollection ? "default" : "outline"} onClick={() => setActiveCollection("")} className="cursor-pointer">All</Badge>
@@ -407,11 +411,16 @@ function RecordsTab() {
           ))}
         </div>
 
-        {loading ? <p className="text-sm text-muted-foreground">Loading...</p> : rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No records yet. Create your first entry — set a collection name like "contacts" or "assets" to group them.</p>
+        {loading ? <p className="text-sm text-muted-foreground">Loading...</p> : visible.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            title={rows.length === 0 ? "No records yet" : "No matching records"}
+            hint={rows.length === 0 ? 'Create your first entry — set a collection name like "contacts" or "assets" to group them.' : "Try a different search term or switch collection."}
+          />
         ) : (
           <div className="divide-y rounded-md border">
-            {rows.map((r) => {
+            {visible.map((r) => {
+
               const entries = Object.entries((r.data as Record<string, unknown>) ?? {});
               return (
                 <div key={r.id} className="p-3">
