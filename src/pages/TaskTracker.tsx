@@ -118,6 +118,45 @@ export default function TaskTrackerPage() {
 
   const getTaskKey = (task: PRSTask) => task.id ?? `sn-${task.serialNumber}`;
 
+  const isAdmin = session?.role === "admin";
+  const canTrash = (task: PRSTask) => Boolean(task.id) && (isAdmin || (!!session && task.createdBy === session.id));
+
+  const loadTrash = async () => {
+    setTrashLoading(true);
+    try {
+      setTrashedTasks(await fetchDeletedTasks());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to load Trash.");
+    } finally {
+      setTrashLoading(false);
+    }
+  };
+
+  const onTrashTask = async (task: PRSTask) => {
+    if (!task.id) return;
+    if (!window.confirm(`Move "${task.taskTitle}" to Trash?`)) return;
+    try {
+      await softDeleteTask(task.id);
+      setTasks((prev) => prev.filter((t) => t.id !== task.id));
+      toast.success("Task moved to Trash.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to move task to Trash.");
+    }
+  };
+
+  const onRestoreTask = async (task: PRSTask) => {
+    if (!task.id) return;
+    try {
+      await restoreTask(task.id);
+      setTrashedTasks((prev) => prev.filter((t) => t.id !== task.id));
+      setTasks((prev) => [...prev, { ...task, deletedAt: null }].sort((a, b) => a.serialNumber - b.serialNumber));
+      toast.success("Task restored.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to restore task.");
+    }
+  };
+
+
   const groupedByStatus = useMemo(() => {
     const monthTasks = tasks.filter((t) => t.dateAssigned.startsWith(selectedMonth));
     return statusColumns.reduce<Record<TaskStatus, PRSTask[]>>((acc, status) => {
