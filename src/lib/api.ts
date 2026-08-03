@@ -47,6 +47,8 @@ function rowToTask(row: TaskRow): PRSTask {
     deliverable: row.deliverable,
     checklist: row.checklist,
     remarks: row.remarks,
+    createdBy: row.created_by,
+    deletedAt: row.deleted_at,
   };
 }
 
@@ -54,11 +56,44 @@ export async function fetchTasks(): Promise<PRSTask[]> {
   const { data, error } = await supabase
     .from("tasks")
     .select("*")
+    .is("deleted_at", null)
     .order("serial_number", { ascending: true });
 
   if (error) throw new Error(error.message);
   return (data ?? []).map(rowToTask);
 }
+
+/** Tasks that have been moved to Trash (soft-deleted). */
+export async function fetchDeletedTasks(): Promise<PRSTask[]> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("*")
+    .not("deleted_at", "is", null)
+    .order("deleted_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(rowToTask);
+}
+
+/** Move a task to Trash. Only the creator or an admin is allowed (enforced in the database). */
+export async function softDeleteTask(taskId: string): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const { error } = await supabase
+    .from("tasks")
+    .update({ deleted_at: new Date().toISOString(), deleted_by: session?.user?.id ?? null })
+    .eq("id", taskId);
+  if (error) throw new Error(error.message);
+}
+
+/** Restore a task from Trash. */
+export async function restoreTask(taskId: string): Promise<void> {
+  const { error } = await supabase
+    .from("tasks")
+    .update({ deleted_at: null, deleted_by: null })
+    .eq("id", taskId);
+  if (error) throw new Error(error.message);
+}
+
 
 async function getUploaderName(userId: string | undefined): Promise<string> {
   if (!userId) return "Unknown";
