@@ -136,6 +136,11 @@ function FilesTab() {
           </div>
         </div>
 
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input className="pl-9" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search files by name, folder or description" />
+        </div>
+
         {folders.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm text-muted-foreground">Folders:</span>
@@ -147,8 +152,13 @@ function FilesTab() {
         )}
 
         {loading ? <p className="text-sm text-muted-foreground">Loading...</p> : visible.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No files yet.</p>
+          <EmptyState
+            icon={FolderOpen}
+            title={rows.length === 0 ? "No files yet" : "No matching files"}
+            hint={rows.length === 0 ? "Upload your first document above — add a folder name to keep things organised." : "Try a different search term or clear the folder filter."}
+          />
         ) : (
+
           <div className="divide-y rounded-md border">
             {visible.map((r) => (
               <div key={r.id} className="flex items-center gap-3 p-3">
