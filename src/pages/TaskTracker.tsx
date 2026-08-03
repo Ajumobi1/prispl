@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, LayoutDashboard, Table as TableIcon, Columns3 } from "lucide-react";
+import { Menu, LayoutDashboard, Table as TableIcon, Columns3, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -45,14 +45,21 @@ import {
   downloadTasks,
   fetchTaskAttachments,
   fetchTasks,
+  fetchDeletedTasks,
+  softDeleteTask,
+  restoreTask,
   downloadAttachment,
 
   TaskAttachment,
   updateTask,
   uploadTaskAttachments,
 } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import KanbanBoard from "@/components/tasks/KanbanBoard";
+import TrashView from "@/components/tasks/TrashView";
 
 import { PRSTask, TaskPriority, TaskStatus, statusColumns, UnitName } from "@/lib/task-types";
+
 
 const priorities: TaskPriority[] = ["Urgent/High", "Medium", "Low"];
 
@@ -70,13 +77,17 @@ const statusVariant: Record<TaskStatus, "secondary" | "default" | "destructive" 
   Delayed: "destructive",
 };
 
-type ViewMode = "table" | "kanban";
+type ViewMode = "table" | "kanban" | "trash";
 
 export default function TaskTrackerPage() {
   const navigate = useNavigate();
+  const { session } = useAuth();
   const [authChecked, setAuthChecked] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [tasks, setTasks] = useState<PRSTask[]>([]);
+  const [trashedTasks, setTrashedTasks] = useState<PRSTask[]>([]);
+  const [trashLoading, setTrashLoading] = useState(false);
+
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [customMonths, setCustomMonths] = useState<string[]>([]);
   const [closedMonths, setClosedMonths] = useState<string[]>([]);
@@ -108,6 +119,45 @@ export default function TaskTrackerPage() {
   });
 
   const getTaskKey = (task: PRSTask) => task.id ?? `sn-${task.serialNumber}`;
+
+  const isAdmin = session?.role === "admin";
+  const canTrash = (task: PRSTask) => Boolean(task.id) && (isAdmin || (!!session && task.createdBy === session.id));
+
+  const loadTrash = async () => {
+    setTrashLoading(true);
+    try {
+      setTrashedTasks(await fetchDeletedTasks());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to load Trash.");
+    } finally {
+      setTrashLoading(false);
+    }
+  };
+
+  const onTrashTask = async (task: PRSTask) => {
+    if (!task.id) return;
+    if (!window.confirm(`Move "${task.taskTitle}" to Trash?`)) return;
+    try {
+      await softDeleteTask(task.id);
+      setTasks((prev) => prev.filter((t) => t.id !== task.id));
+      toast.success("Task moved to Trash.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to move task to Trash.");
+    }
+  };
+
+  const onRestoreTask = async (task: PRSTask) => {
+    if (!task.id) return;
+    try {
+      await restoreTask(task.id);
+      setTrashedTasks((prev) => prev.filter((t) => t.id !== task.id));
+      setTasks((prev) => [...prev, { ...task, deletedAt: null }].sort((a, b) => a.serialNumber - b.serialNumber));
+      toast.success("Task restored.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to restore task.");
+    }
+  };
+
 
   const groupedByStatus = useMemo(() => {
     const monthTasks = tasks.filter((t) => t.dateAssigned.startsWith(selectedMonth));
@@ -455,6 +505,8 @@ export default function TaskTrackerPage() {
             <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" asChild><Link to="/vault">Vault</Link></Button>
             <Button variant={viewMode === "table" ? "secondary" : "ghost"} size="sm" className={viewMode !== "table" ? "text-primary-foreground hover:bg-primary-foreground/10" : ""} onClick={() => setViewMode("table")}>Table</Button>
             <Button variant={viewMode === "kanban" ? "secondary" : "ghost"} size="sm" className={viewMode !== "kanban" ? "text-primary-foreground hover:bg-primary-foreground/10" : ""} onClick={() => setViewMode("kanban")} disabled={isBusy}>Kanban</Button>
+            <Button variant={viewMode === "trash" ? "secondary" : "ghost"} size="sm" className={viewMode !== "trash" ? "text-primary-foreground hover:bg-primary-foreground/10" : ""} onClick={() => { setViewMode("trash"); loadTrash(); }}>Trash</Button>
+
             <UserMenu variant="header" />
 
           </nav>
@@ -473,6 +525,8 @@ export default function TaskTrackerPage() {
               <DropdownMenuItem asChild><Link to="/vault"><LayoutDashboard className="mr-2 h-4 w-4" />Data Vault</Link></DropdownMenuItem>
               <DropdownMenuItem onClick={() => setViewMode("table")}><TableIcon className="mr-2 h-4 w-4" />Table view</DropdownMenuItem>
               <DropdownMenuItem onClick={() => setViewMode("kanban")}><Columns3 className="mr-2 h-4 w-4" />Kanban view</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setViewMode("trash"); loadTrash(); }}><Trash2 className="mr-2 h-4 w-4" />Trash</DropdownMenuItem>
+
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -689,7 +743,13 @@ export default function TaskTrackerPage() {
                                   <Button size="sm" variant="ghost" onClick={cancelEditTask}>Cancel</Button>
                                 </div>
                               ) : (
-                                <Button size="sm" variant="ghost" onClick={() => beginEditTask(task)}>Edit</Button>
+                                <div className="flex gap-1">
+                                  <Button size="sm" variant="ghost" onClick={() => beginEditTask(task)}>Edit</Button>
+                                  {canTrash(task) && (
+                                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => onTrashTask(task)}>Trash</Button>
+                                  )}
+                                </div>
+
                               )}
                               {attachments.length > 0 && (
                                 <Collapsible>
@@ -753,26 +813,21 @@ export default function TaskTrackerPage() {
 
         {/* Kanban View */}
         {viewMode === "kanban" && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {statusColumns.map((status) => (
-              <Card key={status}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">{status}</CardTitle>
-                  <CardDescription>{(groupedByStatus[status] ?? []).length} tasks</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {(groupedByStatus[status] ?? []).map((task) => (
-                    <div key={getTaskKey(task)} className="rounded-md border bg-card p-2 text-sm">
-                      <div className="font-medium text-foreground">{task.taskTitle}</div>
-                      <div className="text-xs text-muted-foreground">{task.unit} · {task.assignee}</div>
-                      <span className={`mt-1 inline-block rounded-full border px-2 py-0.5 text-xs ${priorityClasses[task.priority]}`}>{task.priority}</span>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <KanbanBoard groupedByStatus={groupedByStatus} getTaskKey={getTaskKey} />
         )}
+
+        {/* Trash View */}
+        {viewMode === "trash" && (
+          <TrashView
+            tasks={trashedTasks}
+            loading={trashLoading}
+            canRestore={canTrash}
+            onRestore={onRestoreTask}
+            getTaskKey={getTaskKey}
+          />
+        )}
+
+
       </main>
     </div>
   );

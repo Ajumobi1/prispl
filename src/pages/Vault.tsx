@@ -17,7 +17,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Download, FileText, FolderOpen, NotebookPen, Plus, Trash2, Upload, Database, Pencil } from "lucide-react";
+import { Download, FileText, FolderOpen, NotebookPen, Plus, Trash2, Upload, Database, Pencil, Search, type LucideIcon } from "lucide-react";
 import SEO from "@/components/SEO";
 
 function formatBytes(n: number) {
@@ -29,6 +29,17 @@ function formatBytes(n: number) {
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleString();
 }
+
+function EmptyState({ icon: Icon, title, hint }: { icon: LucideIcon; title: string; hint: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-md border border-dashed py-10 text-center">
+      <Icon className="mb-3 h-8 w-8 text-muted-foreground" />
+      <p className="font-medium text-foreground">{title}</p>
+      <p className="mt-1 max-w-sm text-sm text-muted-foreground">{hint}</p>
+    </div>
+  );
+}
+
 
 export default function VaultPage() {
   return (
@@ -76,6 +87,7 @@ function FilesTab() {
   const [description, setDescription] = useState("");
   const [uploading, setUploading] = useState(false);
   const [filterFolder, setFilterFolder] = useState("");
+  const [query, setQuery] = useState("");
 
   async function refresh() {
     setLoading(true);
@@ -85,7 +97,15 @@ function FilesTab() {
   useEffect(() => { refresh(); }, []);
 
   const folders = useMemo(() => Array.from(new Set(rows.map(r => r.folder).filter(Boolean))).sort(), [rows]);
-  const visible = filterFolder ? rows.filter(r => r.folder === filterFolder) : rows;
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return rows.filter((r) => {
+      if (filterFolder && r.folder !== filterFolder) return false;
+      if (!q) return true;
+      return `${r.file_name} ${r.description} ${r.folder}`.toLowerCase().includes(q);
+    });
+  }, [rows, filterFolder, query]);
+
 
   async function handleUpload() {
     if (!file) return;
@@ -127,6 +147,11 @@ function FilesTab() {
           </div>
         </div>
 
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input className="pl-9" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search files by name, folder or description" />
+        </div>
+
         {folders.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm text-muted-foreground">Folders:</span>
@@ -138,8 +163,13 @@ function FilesTab() {
         )}
 
         {loading ? <p className="text-sm text-muted-foreground">Loading...</p> : visible.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No files yet.</p>
+          <EmptyState
+            icon={FolderOpen}
+            title={rows.length === 0 ? "No files yet" : "No matching files"}
+            hint={rows.length === 0 ? "Upload your first document above — add a folder name to keep things organised." : "Try a different search term or clear the folder filter."}
+          />
         ) : (
+
           <div className="divide-y rounded-md border">
             {visible.map((r) => (
               <div key={r.id} className="flex items-center gap-3 p-3">
@@ -194,6 +224,8 @@ function NotesTab() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [tagsText, setTagsText] = useState("");
+  const [query, setQuery] = useState("");
+  const [activeTag, setActiveTag] = useState("");
 
   async function refresh() {
     setLoading(true);
@@ -201,6 +233,17 @@ function NotesTab() {
     finally { setLoading(false); }
   }
   useEffect(() => { refresh(); }, []);
+
+  const allTags = useMemo(() => Array.from(new Set(rows.flatMap(r => r.tags))).sort(), [rows]);
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return rows.filter((n) => {
+      if (activeTag && !n.tags.includes(activeTag)) return false;
+      if (!q) return true;
+      return `${n.title} ${n.content} ${n.tags.join(" ")}`.toLowerCase().includes(q);
+    });
+  }, [rows, query, activeTag]);
+
 
   function openNew() { setEditing(null); setTitle(""); setContent(""); setTagsText(""); setOpen(true); }
   function openEdit(n: VaultNote) { setEditing(n); setTitle(n.title); setContent(n.content); setTagsText(n.tags.join(", ")); setOpen(true); }
@@ -222,12 +265,30 @@ function NotesTab() {
         <CardTitle>Notes</CardTitle>
         <Button size="sm" onClick={openNew}><Plus className="mr-2 h-4 w-4" />New note</Button>
       </CardHeader>
-      <CardContent>
-        {loading ? <p className="text-sm text-muted-foreground">Loading...</p> : rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No notes yet.</p>
+      <CardContent className="space-y-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input className="pl-9" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search notes by title, content or tag" />
+        </div>
+        {allTags.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-muted-foreground">Tags:</span>
+            <Badge variant={!activeTag ? "default" : "outline"} onClick={() => setActiveTag("")} className="cursor-pointer">All</Badge>
+            {allTags.map(t => (
+              <Badge key={t} variant={activeTag === t ? "default" : "outline"} onClick={() => setActiveTag(t)} className="cursor-pointer">{t}</Badge>
+            ))}
+          </div>
+        )}
+        {loading ? <p className="text-sm text-muted-foreground">Loading...</p> : visible.length === 0 ? (
+          <EmptyState
+            icon={NotebookPen}
+            title={rows.length === 0 ? "No notes yet" : "No matching notes"}
+            hint={rows.length === 0 ? "Capture meeting notes, references or checklists — tag them so the team can find them fast." : "Try a different search term or clear the tag filter."}
+          />
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {rows.map((n) => (
+            {visible.map((n) => (
+
               <Card key={n.id}>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base">{n.title}</CardTitle>
@@ -287,6 +348,16 @@ function RecordsTab() {
   const [collection, setCollection] = useState("");
   const [title, setTitle] = useState("");
   const [fields, setFields] = useState<{ key: string; value: string }[]>([{ key: "", value: "" }]);
+  const [query, setQuery] = useState("");
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((r) =>
+      `${r.title} ${r.collection} ${JSON.stringify(r.data ?? {})}`.toLowerCase().includes(q)
+    );
+  }, [rows, query]);
+
 
   async function refresh() {
     setLoading(true);
@@ -328,6 +399,10 @@ function RecordsTab() {
         <Button size="sm" onClick={openNew}><Plus className="mr-2 h-4 w-4" />New record</Button>
       </CardHeader>
       <CardContent className="space-y-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input className="pl-9" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search records by title, collection or field value" />
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-muted-foreground">Collections:</span>
           <Badge variant={!activeCollection ? "default" : "outline"} onClick={() => setActiveCollection("")} className="cursor-pointer">All</Badge>
@@ -336,11 +411,16 @@ function RecordsTab() {
           ))}
         </div>
 
-        {loading ? <p className="text-sm text-muted-foreground">Loading...</p> : rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No records yet. Create your first entry — set a collection name like "contacts" or "assets" to group them.</p>
+        {loading ? <p className="text-sm text-muted-foreground">Loading...</p> : visible.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            title={rows.length === 0 ? "No records yet" : "No matching records"}
+            hint={rows.length === 0 ? 'Create your first entry — set a collection name like "contacts" or "assets" to group them.' : "Try a different search term or switch collection."}
+          />
         ) : (
           <div className="divide-y rounded-md border">
-            {rows.map((r) => {
+            {visible.map((r) => {
+
               const entries = Object.entries((r.data as Record<string, unknown>) ?? {});
               return (
                 <div key={r.id} className="p-3">
