@@ -60,6 +60,15 @@ Deno.serve(async (req) => {
       });
     }
 
+    // IP + target user: one admin session cannot hammer a single account.
+    const rlTarget = await rateLimit({
+      key: clientKey(req, "admin-reset-password", String(userId)),
+      limit: 5,
+      windowMs: 60_000,
+    });
+    if (!rlTarget.ok) return rateLimitResponse(rlTarget, corsHeaders);
+
+
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const { error } = await adminClient.auth.admin.updateUserById(userId, { password: newPassword });
 
