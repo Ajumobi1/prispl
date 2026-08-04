@@ -18,9 +18,6 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const rl = rateLimit({ key: clientKey(req, "reset-password-self"), limit: 5, windowMs: 60_000 });
-  if (!rl.ok) return rateLimitResponse(rl, corsHeaders);
-
   try {
     const { username, securityAnswer, newPassword } = await req.json();
 
@@ -36,6 +33,25 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const normalizedUsername = String(username).trim().toLowerCase();
+
+    // IP + targeted username: stops IP rotation from dodging the limit.
+    const rlIp = await rateLimit({
+      key: clientKey(req, "reset-password-self", normalizedUsername),
+      limit: 5,
+      windowMs: 60_000,
+    });
+    if (!rlIp.ok) return rateLimitResponse(rlIp, corsHeaders);
+
+    // Username alone: stops a botnet brute-forcing one account from many IPs.
+    const rlAccount = await rateLimit({
+      key: identifierKey("reset-password-self:account", normalizedUsername),
+      limit: 10,
+      windowMs: 15 * 60_000,
+    });
+    if (!rlAccount.ok) return rateLimitResponse(rlAccount, corsHeaders);
+
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
