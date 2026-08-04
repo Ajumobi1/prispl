@@ -10,7 +10,8 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const rl = rateLimit({ key: clientKey(req, "set-security-answer"), limit: 10, windowMs: 60_000 });
+  // No target identifier in this request (it always acts on the caller), so IP-only.
+  const rl = await rateLimit({ key: clientKey(req, "set-security-answer"), limit: 10, windowMs: 60_000 });
   if (!rl.ok) return rateLimitResponse(rl, corsHeaders);
 
   try {

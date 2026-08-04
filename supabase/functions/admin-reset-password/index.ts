@@ -13,7 +13,9 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const rl = rateLimit({ key: clientKey(req, "admin-reset-password"), limit: 10, windowMs: 60_000 });
+  // Coarse IP-only guard before any work; a tighter IP+target check runs
+  // once the body is parsed below.
+  const rl = await rateLimit({ key: clientKey(req, "admin-reset-password"), limit: 10, windowMs: 60_000 });
   if (!rl.ok) return rateLimitResponse(rl, corsHeaders);
 
   try {
@@ -57,6 +59,15 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // IP + target user: one admin session cannot hammer a single account.
+    const rlTarget = await rateLimit({
+      key: clientKey(req, "admin-reset-password", String(userId)),
+      limit: 5,
+      windowMs: 60_000,
+    });
+    if (!rlTarget.ok) return rateLimitResponse(rlTarget, corsHeaders);
+
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const { error } = await adminClient.auth.admin.updateUserById(userId, { password: newPassword });

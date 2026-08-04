@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      auth_rate_limits: {
+        Row: {
+          count: number
+          key: string
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          key: string
+          updated_at?: string
+          window_start?: string
+        }
+        Update: {
+          count?: number
+          key?: string
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       backup_failures: {
         Row: {
           attachment_id: string | null
@@ -372,6 +393,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_rate_limit: {
+        Args: { _key: string; _limit: number; _window_seconds: number }
+        Returns: {
+          allowed: boolean
+          retry_after_sec: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -380,6 +408,10 @@ export type Database = {
         Returns: boolean
       }
       is_approved: { Args: { _user_id: string }; Returns: boolean }
+      purge_expired_rate_limits: {
+        Args: { _older_than_seconds?: number }
+        Returns: number
+      }
     }
     Enums: {
       account_status: "pending" | "approved" | "declined" | "locked"

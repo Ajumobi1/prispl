@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.0";
 import { hashAnswer, verifyAnswer, isLegacyHash } from "../_shared/passwordHash.ts";
-import { rateLimit, clientKey, rateLimitResponse } from "../_shared/rateLimit.ts";
+import { rateLimit, clientKey, identifierKey, rateLimitResponse } from "../_shared/rateLimit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,9 +18,6 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const rl = rateLimit({ key: clientKey(req, "reset-password-self"), limit: 5, windowMs: 60_000 });
-  if (!rl.ok) return rateLimitResponse(rl, corsHeaders);
-
   try {
     const { username, securityAnswer, newPassword } = await req.json();
 
@@ -37,11 +34,30 @@ Deno.serve(async (req) => {
       });
     }
 
+    const normalizedUsername = String(username).trim().toLowerCase();
+
+    // IP + targeted username: stops IP rotation from dodging the limit.
+    const rlIp = await rateLimit({
+      key: clientKey(req, "reset-password-self", normalizedUsername),
+      limit: 5,
+      windowMs: 60_000,
+    });
+    if (!rlIp.ok) return rateLimitResponse(rlIp, corsHeaders);
+
+    // Username alone: stops a botnet brute-forcing one account from many IPs.
+    const rlAccount = await rateLimit({
+      key: identifierKey("reset-password-self:account", normalizedUsername),
+      limit: 10,
+      windowMs: 15 * 60_000,
+    });
+    if (!rlAccount.ok) return rateLimitResponse(rlAccount, corsHeaders);
+
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    const normalizedUsername = username.trim().toLowerCase();
+
 
     const { data: profile } = await adminClient
       .from("profiles")
