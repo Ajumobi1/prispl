@@ -27,15 +27,36 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Coarse IP-only guard before parsing.
+  const rlIpOnly = await rateLimit({ key: clientKey(req, "get-security-question"), limit: 20, windowMs: 60_000 });
+  if (!rlIpOnly.ok) return rateLimitResponse(rlIpOnly, corsHeaders);
+
   try {
     const { username } = await req.json();
     if (!username || typeof username !== "string") {
       return respond({ error: GENERIC_ERROR_MESSAGE });
     }
 
+    const normalizedUsername = username.trim().toLowerCase();
+
+    const rlIp = await rateLimit({
+      key: clientKey(req, "get-security-question", normalizedUsername),
+      limit: 5,
+      windowMs: 60_000,
+    });
+    if (!rlIp.ok) return rateLimitResponse(rlIp, corsHeaders);
+
+    const rlAccount = await rateLimit({
+      key: identifierKey("get-security-question:account", normalizedUsername),
+      limit: 20,
+      windowMs: 15 * 60_000,
+    });
+    if (!rlAccount.ok) return rateLimitResponse(rlAccount, corsHeaders);
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
 
     const { data: profile } = await adminClient
       .from("profiles")
