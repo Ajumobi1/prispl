@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    const normalizedUsername = username.trim().toLowerCase();
+
 
     const { data: profile } = await adminClient
       .from("profiles")
