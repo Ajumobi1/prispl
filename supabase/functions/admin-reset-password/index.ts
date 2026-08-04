@@ -13,7 +13,9 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const rl = rateLimit({ key: clientKey(req, "admin-reset-password"), limit: 10, windowMs: 60_000 });
+  // Coarse IP-only guard before any work; a tighter IP+target check runs
+  // once the body is parsed below.
+  const rl = await rateLimit({ key: clientKey(req, "admin-reset-password"), limit: 10, windowMs: 60_000 });
   if (!rl.ok) return rateLimitResponse(rl, corsHeaders);
 
   try {
