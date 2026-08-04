@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.0";
 import { hashAnswer, verifyAnswer, isLegacyHash } from "../_shared/passwordHash.ts";
-import { rateLimit, clientKey, rateLimitResponse } from "../_shared/rateLimit.ts";
+import { rateLimit, clientKey, identifierKey, rateLimitResponse } from "../_shared/rateLimit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
