@@ -26,6 +26,8 @@ import {
 } from "@/lib/authApi";
 import { supabase } from "@/integrations/supabase/client";
 import UserMenu from "@/components/UserMenu";
+import ondoLogo from "@/assets/ondo-state-logo.png";
+import odchcLogo from "@/assets/odchc-logo.png";
 import TaskAnalyticsCard from "@/components/TaskAnalyticsCard";
 import ClientErrorsCard from "@/components/ClientErrorsCard";
 
