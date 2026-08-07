@@ -118,7 +118,7 @@ describe("vault files", () => {
 
     await uploadFile(file, "/Reports/", "Quarterly");
 
-    const [path] = backend.bucket("vault-files").upload.mock.calls[0] as [string];
+    const [path] = backend.bucket("vault-files").upload.mock.calls[0] as unknown as [string];
     expect(path.startsWith(`${USER_ID}/Reports/`)).toBe(true);
     expect(path.endsWith("-notes.pdf")).toBe(true);
 
