@@ -361,11 +361,17 @@ test.describe.serial("database-level RLS enforcement", () => {
     expectBlocked(res, "self department change");
   });
 
-  test("profile_recovery: not readable by regular users or admins (service-role only)", async () => {
+  test("profile_recovery: zero rows exposed to regular users or admins (service-role only)", async () => {
+    // The table has RLS with no policies, so PostgREST answers with an empty
+    // set (default-deny) rather than an error. The security property is that
+    // no row is ever exposed — assert that directly.
     const asUser = await b.from("profile_recovery" as never).select("*");
-    expect(asUser.error, "profile_recovery readable by regular user").toBeTruthy();
+    const userRows = (asUser.data as unknown[] | null) ?? [];
+    expect(userRows, `profile_recovery leaked rows to regular user: ${JSON.stringify(asUser.data)}`).toHaveLength(0);
+
     const asAdmin = await adm.from("profile_recovery" as never).select("*");
-    expect(asAdmin.error, "profile_recovery readable by admin via API").toBeTruthy();
+    const adminRows = (asAdmin.data as unknown[] | null) ?? [];
+    expect(adminRows, `profile_recovery leaked rows to admin via API: ${JSON.stringify(asAdmin.data)}`).toHaveLength(0);
   });
 
   test("pending (unapproved) user cannot read tasks or vault data at all", async () => {
