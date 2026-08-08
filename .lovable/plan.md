@@ -1,63 +1,52 @@
-# Test coverage: auth flows + admin / Vault / soft-delete
+# Database-level RLS verification suite
 
-Yes — the full scope fits in one session. It stays inside the two setups already in the repo (Vitest for logic, Playwright for the one browser spec), adds no new framework, and needs no schema or product changes.
+## Goal
+Prove actual Postgres Row-Level-Security enforcement on `tasks`, `vault_notes`, `vault_records`, `vault_files`, and `profiles`/`user_roles` using real authenticated sessions — not just client-side guards. Extends the existing Playwright setup (`tests/offline-shell.spec.ts` pattern); no new framework.
 
-## Approach
+## Environment honesty
+- No separate staging backend exists; tests run against this project's dev backend (what the preview uses). The published site's production environment is not touched.
+- Three throwaway accounts (`rls-test-a`, `rls-test-b` regular approved users, `rls-test-admin`) are created at suite start and fully deleted at the end, along with every row/file they created. Cleanup runs even on failure, and setup purges any leftover `rls-test-*` accounts from a crashed prior run.
 
-All new tests are **Vitest unit/contract tests** against the client API layer (`src/lib/*.ts`), with the backend client mocked via a small shared fake. That is where every security-relevant decision the browser makes actually lives: credential handling, account-status gating, admin guards, Vault ownership, soft-delete vs. permanent delete, trash filtering.
+## What gets built
 
-Edge-function behaviour (password reset, security question, rate limiting) is covered by asserting the **client-side contract** — what the app sends, and how it handles generic-error and 429 responses — rather than by hitting the live deployed functions. Live calls would mutate real accounts and real rate-limit counters, and would be flaky in CI.
+### 1. `rls-test-support` edge function (new, secret-gated)
+- Same pattern as existing `seed-admin`: requires an `x-test-secret` header matching a new `RLS_TEST_SUPPORT_SECRET` project secret.
+- Hard restriction: only operates on usernames prefixed `rls-test-`; refuses everything else, so it can never provision or delete real accounts.
+- Actions: `setup` (purge leftovers, create user A / user B / admin, all approved, return IDs + generated passwords), `cleanup` (delete test rows, storage objects, then the auth users).
+- Uses service role internally; never exposes the service key.
 
-## New files
+### 2. Soft-delete SELECT policy migration (one policy, required for the soft-delete bullet to pass)
+- Replace `Approved users can view tasks` with: approved users see rows where `deleted_at IS NULL`, plus their own trashed rows (needed for the Trash view) — admins see everything.
+- No other policy or logic changes.
 
-```text
-src/test/mocks/backend.ts        shared fake backend client + helpers
-src/lib/authApi.test.ts          login, registration, approval states, admin guards
-src/lib/recovery.test.ts         password reset + security question contracts
-src/lib/api.test.ts              soft-delete / restore / trash isolation
-src/lib/vaultApi.test.ts         Vault notes, records, files, ownership
-```
+### 3. `tests/rls.spec.ts` — Playwright E2E, API-level via `@supabase/supabase-js`
+Seeded data: user A and user B each own a task, note, record, and vault file. Assertions (~30):
 
-## Coverage
+**Cross-user isolation (as user B against A's data):**
+- Cannot update or delete A's vault note/record/file (RLS error / zero rows)
+- Cannot delete A's storage object in `vault-files`
+- Can read A's vault rows and task (org-shared by design — documents intent)
+- Can update A's task fields but CANNOT soft-delete it (DB trigger blocks)
+- Cannot hard-delete any task (DELETE denied for everyone)
 
-**Auth**
-- Login success returns username / full name / resolved role (admin vs user).
-- Wrong credentials throw the single generic "Invalid username or password" message (no enumeration).
-- Pending, declined and locked accounts each throw their specific message **and** are signed out again — the session must not survive a non-approved status.
-- A valid auth user with no profile row is also signed out with the generic message.
-- Registration: username normalisation, the 3-32 char charset rule, the 8-char password minimum, duplicate-username rejection, sign-out immediately after signup, and the security-answer call being routed to the backend function rather than written from the client.
+**Soft-delete enforcement:**
+- A's trashed task is invisible to B at the API level, still visible to A (Trash view) and to admin
 
-**Password reset / security question**
-- Happy path sends normalised username + answer + new password.
-- Short password is rejected before any network call.
-- A 403 generic-invalid response surfaces the same message for "wrong answer" and "no such user".
-- A 429 surfaces a retry-after message and does not retry automatically.
-- Security question fetch never reveals whether a username exists.
+**Privilege-escalation (as regular user):**
+- Cannot insert/update/delete rows in `user_roles` (self or others)
+- Cannot change another user's profile, nor own `status`/`username`/`department` via the lockdown policy
+- Cannot approve/decline/lock accounts; a pending user cannot even read tasks
 
-**Account Admin**
-- approve / decline / lock / unlock each write the expected status.
-- Every one of the four throws "Admin access required" for a non-admin session, and for a signed-out session.
-- An admin cannot decline or lock their own account.
-- User listing resolves roles correctly and is admin-gated.
+**Admin scope (and its limits):**
+- Can read all profiles, update statuses, manage roles, soft-delete/restore any task
+- CANNOT hard-delete tasks, and cannot see `profile_recovery` data (no grants)
 
-**Vault**
-- Create note / record / file stamps the current user as owner; anonymous creation is rejected.
-- Listing is scoped and ordered as the UI expects; collection and tag filters narrow correctly.
-- Update and delete paths surface backend permission errors as thrown errors rather than silent no-ops (the not-my-row case).
+### 4. Run + verify
+- Execute the suite against the live dev backend; report pass/fail per assertion.
+- If any assertion beyond the known soft-delete gap fails, that is a real vulnerability finding — report it, fix the policy, re-run.
+- Confirm post-run state: zero `rls-test-*` users, rows, or storage objects remain.
 
-**Soft-delete / Trash**
-- Delete sets `deleted_at` + `deleted_by`; it never issues a row delete.
-- The normal task list filters to `deleted_at is null`; the trash list filters to the inverse — a trashed task cannot leak into the board.
-- Restore clears both fields.
-- Permanent delete issues a real delete and only from the trash path.
-
-## Technical notes
-
-- The fake backend is a chainable query-builder stub that records the calls made (`from`, `select`, `eq`, `is`, `not`, `update`, `insert`, `delete`, `order`) and returns queued results, so tests assert both the outcome and the exact query shape — that is what proves "delete didn't leak into the normal view".
-- `src/integrations/supabase/client` is mocked with `vi.mock`; no network, no credentials, no live data touched.
-- Runs under the existing `vitest.config.ts` / `src/test/setup.ts`; `npm test` picks them up with no config change.
-- Existing tests (`task-types.test.ts`, `exports.test.ts`, the Playwright offline spec) are left untouched.
-
-## Out of scope
-
-Database-level RLS enforcement cannot be proven from the browser test layer — that needs two real accounts and live sessions. The tests above assert the client-side guards and query shapes; the policies themselves stay verified by the security scanner. Flagging so it is not mistaken for full end-to-end coverage.
+## Assumptions (correct me if wrong)
+- Shared-read of tasks/vault across approved users is intended and stays.
+- The soft-delete SELECT migration (owner/admin can see trashed rows; others cannot) is acceptable — it changes what non-owners can fetch via direct API calls, not what the UI shows.
+- The `rls-test-support` function stays deployed (secret-gated, `rls-test-` prefix only) so the suite can be re-run as a regression check.
